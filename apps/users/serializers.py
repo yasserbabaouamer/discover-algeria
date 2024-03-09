@@ -25,3 +25,7 @@ class TokensSerializer(rest_serializers.Serializer):
     access = rest_serializers.CharField(max_length=255)
     refresh = rest_serializers.CharField(max_length=255)
     is_activated = rest_serializers.BooleanField()
+
+
+class ConfirmationRequestSerializer(rest_serializers.Serializer):
+    confirmation_code = rest_serializers.IntegerField()

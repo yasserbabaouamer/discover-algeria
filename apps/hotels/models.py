@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import CheckConstraint, Q, Index
 
 from apps.destinations.models import City
 from apps.guests.models import Guest
@@ -41,6 +42,11 @@ class Hotel(models.Model):
 
     class Meta:
         db_table = 'hotels'
+        indexes = [
+            Index(fields=('name',), name='idx_name'),
+            Index(fields=('address',), name='idx_address'),
+            Index(fields=('latitude', 'longitude'), name='idx_location'),
+        ]
 
 
 class HotelImage(models.Model):
@@ -54,6 +60,9 @@ class HotelImage(models.Model):
 class BedType(models.Model):
     name = models.CharField(max_length=50)
     icon = models.URLField(null=True)
+
+    class Meta:
+        db_table = 'bed_types'
 
 
 class RoomType(models.Model):
@@ -73,7 +82,7 @@ class RoomType(models.Model):
 
 class Room(models.Model):
     id = models.AutoField(primary_key=True)
-    code = models.IntegerField(unique=True)
+    code = models.IntegerField()
     description = models.CharField(max_length=255)
     number_of_guests = models.PositiveIntegerField()
     room_type = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name='rooms')
@@ -93,6 +102,11 @@ class Reservation(models.Model):
 
     class Meta:
         db_table = 'reservations'
+        constraints = [
+            CheckConstraint(
+                check=Q(status__in=list(ReservationStatus)), name='chk_status'
+            )
+        ]
 
 
 class ReservedRoomType(models.Model):
@@ -105,7 +119,7 @@ class ReservedRoomType(models.Model):
 
 
 class RoomAssignment(models.Model):
-    reserved_room_type = models.ForeignKey(ReservedRoomType, on_delete=models.CASCADE, related_name='room_assignments')
+    reserved_room_type = models.ForeignKey(ReservedRoomType, on_delete=models.CASCADE, related_name='assigned_rooms')
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='assignments')
 
     class Meta:
@@ -122,3 +136,7 @@ class GuestReview(models.Model):
 
     class Meta:
         db_table = 'guest_reviews'
+        indexes = [
+            Index(fields=('rating',), name='idx_rating'),
+            Index(fields=('created_at',), name='idx_created_at'),
+        ]

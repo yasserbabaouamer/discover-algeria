@@ -1,0 +1,257 @@
+openapi: 3.0.3
+info:
+  title: Discover Algeria API Specification
+  version: 1.0.0
+paths:
+  /api/v1/agencies/top-tours/:
+    get:
+      operationId: agencies_top_tours_list
+      summary: Get top tours in Algeria
+      tags:
+      - agencies
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tour'
+          description: ''
+  /api/v1/auth/confirm/:
+    post:
+      operationId: auth_confirm_create
+      description: Post the confirmation code with the JWT token in Headers
+      summary: Account confirmation
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConfirmationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConfirmationRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/confirm/resend:
+    post:
+      operationId: auth_confirm_resend_create
+      tags:
+      - auth
+      responses:
+        '200':
+          description: No response body
+  /api/v1/blogs/recent/:
+    get:
+      operationId: blogs_recent_list
+      summary: Get Recently Added Blogs
+      tags:
+      - blogs
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Blog'
+          description: ''
+  /api/v1/destinations/top/:
+    get:
+      operationId: destinations_top_retrieve
+      tags:
+      - destinations
+      responses:
+        '200':
+          description: No response body
+  /api/v1/guests/login/:
+    post:
+      operationId: guests_login_create
+      tags:
+      - guests
+      responses:
+        '200':
+          description: No response body
+  /api/v1/guests/signup/:
+    post:
+      operationId: guests_signup_create
+      summary: Signup for guests
+      tags:
+      - guests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestSignupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GuestSignupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GuestSignupRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+                  is_activated:
+                    type: boolean
+          description: ''
+  /api/v1/hotels/fill/:
+    get:
+      operationId: hotels_fill_retrieve
+      tags:
+      - hotels
+      responses:
+        '200':
+          description: No response body
+  /api/v1/hotels/most-visited/:
+    get:
+      operationId: hotels_most_visited_retrieve
+      summary: Get the most visited hotels
+      tags:
+      - hotels
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hotel'
+          description: ''
+components:
+  schemas:
+    Blog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        cover_img:
+          type: string
+          format: uri
+        content:
+          type: string
+      required:
+      - content
+      - cover_img
+      - id
+      - title
+    ConfirmationRequest:
+      type: object
+      properties:
+        confirmation_code:
+          type: integer
+      required:
+      - confirmation_code
+    GuestSignupRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 255
+        last_name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          maxLength: 255
+        password:
+          type: string
+          maxLength: 255
+        confirm_password:
+          type: string
+          maxLength: 255
+      required:
+      - confirm_password
+      - email
+      - first_name
+      - last_name
+      - password
+    Hotel:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        stars:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        cover_img:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        starts_at:
+          type: integer
+        reservations_count:
+          type: integer
+        rating:
+          type: number
+          format: double
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/HotelImage'
+      required:
+      - id
+      - images
+      - name
+      - rating
+      - reservations_count
+      - stars
+      - starts_at
+    HotelImage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        img:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+      required:
+      - id
+    Tour:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 500
+        price:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - description
+      - id
+      - price
+      - title

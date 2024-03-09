@@ -1,21 +1,18 @@
-import asyncio
-import multiprocessing
 import secrets
 from datetime import datetime, timedelta
-from multiprocessing import Process
 from threading import Thread
 
 import rest_framework
-from asgiref.sync import sync_to_async
 from decouple import config
 from django.contrib.auth import authenticate, password_validation
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.db import transaction
+from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import User, Profile, Activation
+from .models import User, Activation
 from ..guests.models import Guest
 
 
@@ -45,7 +42,7 @@ def generate_and_send_confirmation_code(user: User):
 def register_new_guest(signup_request: map):
     email = signup_request['email']
     if is_email_already_exists(email):
-        raise ValidationError(detail='This email is already used')
+        raise ValidationError(detail='This email is already exists', code=status.HTTP_409_CONFLICT)
     try:
         password_validation.validate_password(signup_request['password'])
     except Exception as error:
@@ -53,13 +50,12 @@ def register_new_guest(signup_request: map):
 
     with transaction.atomic():
         user = User.objects.create_user(
-            signup_request['first_name'],
-            signup_request['last_name'],
             signup_request['email'],
             signup_request['password']
         )
-        profile = Profile.objects.create_profile(user=user)
-        guest = Guest.objects.create_guest(user=user)
+        guest = Guest.objects.create_guest(
+            user, signup_request['first_name'], signup_request['last_name']
+        )
         Thread(target=generate_and_send_confirmation_code, args=(user,))
         return generate_jwt_tokens(user)
 
@@ -92,10 +88,10 @@ def send_confirmation_code(email, code):
     send_mail(subject, message, from_email, recipient_list)
 
 
-def activate_guest(user_id: int, confirmation_code: int):
+def activate_guest(user_id: int, confirmation_request: dict):
     try:
         guest = Guest.objects.get(user_id=user_id)
-        if (guest.user.activation.activation_code == confirmation_code
+        if (guest.user.activation.activation_code == confirmation_request['confirmation_code']
                 and not guest.user.activation.is_expired()
                 and not guest.user.activation.is_used):
             with transaction.atomic():
