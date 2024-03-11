@@ -1,5 +1,6 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import CheckConstraint, Q, Index
+from django.db.models import CheckConstraint, Q, Index, Count, Avg, Min, QuerySet
 
 from apps.destinations.models import City
 from apps.guests.models import Guest
@@ -25,6 +26,22 @@ class Amenity(models.Model):
         db_table = 'amenities'
 
 
+class HotelManager(models.Manager):
+
+    def get_most_visited_hotels(self) -> QuerySet:
+        return self.annotate(
+            reservations_count=Count('room_types__reservations'),
+            rating=Avg('room_types__reservations__review__rating'),
+            starts_at=Min('room_types__price_per_night')
+        ).order_by('-reservations_count')
+
+    def get_hotel_by_id(self, hotel_id: int):
+        try:
+            return self.prefetch_related('room_types', 'amenities').get(pk=hotel_id)
+        except ObjectDoesNotExist as e:
+            return None
+
+
 class Hotel(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)  # Assuming a reasonable length for the name
@@ -39,6 +56,7 @@ class Hotel(models.Model):
     contact_number = models.CharField(max_length=20)
     amenities = models.ManyToManyField(Amenity, db_table='hotel_amenities')
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, related_name='hotels')
+    objects = HotelManager()
 
     class Meta:
         db_table = 'hotels'
@@ -94,7 +112,6 @@ class Room(models.Model):
 class Reservation(models.Model):
     id = models.AutoField(primary_key=True)
     guest = models.ForeignKey(Guest, related_name='reservations', on_delete=models.CASCADE)
-    room_type = models.ForeignKey(RoomType, related_name='reservations', on_delete=models.CASCADE, null=True)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     total_price = models.BigIntegerField()
@@ -126,6 +143,12 @@ class RoomAssignment(models.Model):
         db_table = 'room_assignments'
 
 
+class GuestReviewManager(models.Manager):
+
+    def get_reviews_by_hotel_id(self, hotel_id):
+        return self.filter(reservation__reserved_room_types__room_type__hotel_id=hotel_id).all()
+
+
 class GuestReview(models.Model):
     reservation = models.OneToOneField(Reservation, on_delete=models.CASCADE, related_name='review')
     rating = models.PositiveIntegerField()
@@ -133,6 +156,7 @@ class GuestReview(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    objects = GuestReviewManager()
 
     class Meta:
         db_table = 'guest_reviews'
