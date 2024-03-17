@@ -10,6 +10,7 @@ class GetTopTours(ListAPIView):
     serializer_class = serializers.TourSerializer
 
     @extend_schema(
+        tags=['Touristic Agencies'],
         summary='Get top tours in Algeria',
         responses=serializers.TourSerializer
     )

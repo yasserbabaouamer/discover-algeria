@@ -53,6 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Activation(models.Model):
     user = models.OneToOneField(User, on_delete=models.SET_NULL, related_name='activation', null=True)
+    token = models.UUIDField(unique=True, max_length=100)
     activation_code = models.IntegerField()
     is_used = models.BooleanField(default=False)
     expires_at = models.DateTimeField()

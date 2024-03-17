@@ -1,4 +1,5 @@
 import secrets
+import uuid
 from datetime import datetime, timedelta
 from threading import Thread
 
@@ -8,41 +9,44 @@ from django.contrib.auth import authenticate, password_validation
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.db import transaction
-from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 from .models import User, Activation
-from ..guests.models import Guest
+from apps.guests.models import Guest
 
 
 def authenticate_guest(login_request: dict):
     user: User = authenticate(email=login_request['email'], password=login_request['password'])
-    if user is not None and user.guest is not None:
-        return generate_jwt_tokens(user)
+    if user is not None:
+        return generate_tokens_for_guest(user)
     else:
         return None
 
 
-def generate_jwt_tokens(user: User):
+def generate_access_token(user: User):
+    access_token = AccessToken.for_user(user)
+    access_token.set_exp((access_token.current_time + timedelta(minutes=10)).isoformat())
+    access = {
+        'access': str(access_token)
+    }
+    return access
+
+
+def generate_tokens_for_guest(user: User):
     refresh_token = RefreshToken.for_user(user)
     tokens = {
         'access': str(refresh_token.access_token),
-        'refresh': str(refresh_token),
-        'is_activated': user.is_active
+        'refresh': str(refresh_token)
+        # 'has_guest_acc': bool(user.guest)
     }
     return tokens
 
 
-def generate_and_send_confirmation_code(user: User):
-    activation = generate_confirmation_code(user=user)
-    send_confirmation_code(user.email, activation.activation_code)
-
-
-def register_new_guest(signup_request: map):
+def register_new_user(signup_request: dict):
     email = signup_request['email']
     if is_email_already_exists(email):
-        raise ValidationError(detail='This email is already exists', code=status.HTTP_409_CONFLICT)
+        raise ValidationError(detail={'msg': 'This email is already exists'})
     try:
         password_validation.validate_password(signup_request['password'])
     except Exception as error:
@@ -53,11 +57,15 @@ def register_new_guest(signup_request: map):
             signup_request['email'],
             signup_request['password']
         )
-        guest = Guest.objects.create_guest(
-            user, signup_request['first_name'], signup_request['last_name']
-        )
-        Thread(target=generate_and_send_confirmation_code, args=(user,))
-        return generate_jwt_tokens(user)
+        activation = generate_confirmation_code(user)
+        Thread(target=send_confirmation_code, args=(user.email, activation.activation_code)).start()
+        return activation.token
+
+
+def setup_guest_profile_for_existing_user(user: User, profile_request: dict):
+    guest = Guest.objects.create_guest(
+        user, profile_request['first_name'], profile_request['last_name']
+    )
 
 
 def is_email_already_exists(email: str):
@@ -66,15 +74,18 @@ def is_email_already_exists(email: str):
 
 def generate_confirmation_code(user) -> Activation:
     _random = secrets.randbelow(1000000)
-    expires_at = datetime.now() + timedelta(minutes=5)
+    user_token = uuid.uuid4()
+    expires_at = datetime.now() + timedelta(minutes=10)
     if Activation.objects.filter(activation_code=_random, expires_at__gt=datetime.now()).exists():
         generate_confirmation_code(user)
     activation, created = Activation.objects.get_or_create(user=user, defaults={
         'activation_code': _random,
+        'token': user_token,
         'expires_at': expires_at
     })
     if not created:
         activation.activation_code = _random
+        activation.token = user_token
         activation.expires_at = expires_at
         activation.save()
     return activation
@@ -88,28 +99,36 @@ def send_confirmation_code(email, code):
     send_mail(subject, message, from_email, recipient_list)
 
 
-def activate_guest(user_id: int, confirmation_request: dict):
+def activate_user(confirmation_request: dict):
     try:
-        guest = Guest.objects.get(user_id=user_id)
-        if (guest.user.activation.activation_code == confirmation_request['confirmation_code']
-                and not guest.user.activation.is_expired()
-                and not guest.user.activation.is_used):
+        user = User.objects.get(activation__token=str(confirmation_request['token']))
+        print(user.email)
+        if (user.activation.activation_code == confirmation_request['confirmation_code']
+                and not user.activation.is_expired()
+                and not user.activation.is_used):
             with transaction.atomic():
-                guest.user.is_active = True
-                guest.user.save()
-                guest.user.activation.is_used = True
-                guest.user.activation.save()
+                user.is_active = True
+                user.save()
+                user.activation.is_used = True
+                user.activation.save()
+                return generate_tokens_for_guest(user)
         else:
-            raise ValidationError(detail='Invalid confirmation code')
+            raise ValidationError({'detail': 'Invalid confirmation code'})
     except ObjectDoesNotExist as e:
         raise ValidationError({'detail': e})
 
 
-def resend_confirmation_code(user_id: int):
+def resend_confirmation_code(resend_request: dict):
     try:
-        user = User.objects.get(pk=user_id)
+        user = User.objects.get(activation__token=resend_request['token'])
         if user.is_active:
-            raise ValidationError(detail='Your account is already activated')
-        Thread(target=generate_and_send_confirmation_code, args=(user,)).start()
+            raise ValidationError({'detail': 'Your account is already activated'})
+        activation = generate_confirmation_code(user)
+        Thread(target=send_confirmation_code, args=(user.email, activation.activation_code)).start()
+        return activation.token
     except ObjectDoesNotExist as e:
-        raise ValidationError(detail='This user does not exist')
+        raise ValidationError({'detail': 'Invalid token'})
+
+
+def is_email_exists(email_request: dict):
+    return User.objects.is_email_already_exists(email_request['email'])

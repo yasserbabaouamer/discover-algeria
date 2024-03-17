@@ -7,13 +7,13 @@ from apps.users.models import User
 
 
 class GuestManager(models.Manager):
-    def create_guest(self, user: User, first_name, last_name):
-        guest = self.create(user=user, first_name=first_name, last_name=last_name)
+    def create_guest(self, user: User, first_name, last_name, profile_pic=None):
+        guest = self.create(user=user, first_name=first_name, last_name=last_name, profile_pic=profile_pic)
         return guest
 
 
 class Guest(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE,related_name='guest')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='guest')
     first_name = models.CharField(max_length=255, null=True)
     last_name = models.CharField(max_length=255, null=True)
     birthday = models.DateField(null=True)

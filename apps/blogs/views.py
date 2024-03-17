@@ -11,6 +11,7 @@ class GetRecentlyAddedBlogs(ListAPIView):
     serializer_class = serializers.BlogSerializer
 
     @extend_schema(
+        tags=['Blogs'],
         summary='Get Recently Added Blogs',
         responses=serializers.BlogSerializer
     )

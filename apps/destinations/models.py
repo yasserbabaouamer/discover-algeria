@@ -13,6 +13,7 @@ class Country(models.Model):
 
 class City(models.Model):
     name = models.CharField(max_length=255)
+    cover_img = models.ImageField(default='img')
     country = models.ForeignKey(Country, related_name='cities', on_delete=models.SET_NULL, null=True)
 
     class Meta:

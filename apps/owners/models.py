@@ -17,8 +17,10 @@ class Owner(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    constraints = [
-        CheckConstraint(
-            check=Q(preferred_currency__in=list(Currency)), name='chk_pref_currency'
-        )
-    ]
+    class Meta:
+        db_table = 'owners'
+        constraints = [
+            CheckConstraint(
+                check=Q(preferred_currency__in=list(Currency)), name='chk_pref_currency_owners'
+            )
+        ]

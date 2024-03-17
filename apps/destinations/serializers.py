@@ -5,4 +5,4 @@ from . import models
 class DestinationSerializer(rest_serializers.ModelSerializer):
     class Meta:
         model = models.City
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'cover_img']
