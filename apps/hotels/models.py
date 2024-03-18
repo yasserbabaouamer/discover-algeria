@@ -90,7 +90,7 @@ class RoomType(models.Model):
     nb_beds = models.PositiveIntegerField()  # Positive integer for number of beds
     main_bed_type = models.ForeignKey(BedType, on_delete=models.SET_NULL, null=True)  #
     price_per_night = models.BigIntegerField()
-    cover_img = models.URLField(max_length=2048)  # Maximum URL length
+    cover_img = models.ImageField(null=True)
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_types')
     amenities = models.ManyToManyField(Amenity, db_table='room_type_amenities')  #
 

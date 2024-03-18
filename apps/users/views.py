@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from . import serializers
 from . import services
+from .models import Activation
 from .serializers import *
 
 
@@ -62,10 +63,12 @@ class LoginGuestView(APIView):
     def post(self, request: Request):
         login_request = serializers.GuestLoginRequestSerializer(data=self.request.data)
         if login_request.is_valid():
-            tokens = services.authenticate_guest(login_request.data)
-            if tokens is not None:
-                tokens_serializer = TokensSerializer(tokens)
+            result = services.authenticate_guest(login_request.data)
+            if isinstance(result, dict):
+                tokens_serializer = TokensSerializer(result)
                 return Response(data=tokens_serializer.data, status=status.HTTP_200_OK)
+            elif isinstance(result, int):
+                return Response(data={'token': result}, status=status.HTTP_201_CREATED)
             else:
                 raise AuthenticationFailed(detail="Authentication failed , invalid information")
         else:
@@ -75,7 +78,6 @@ class LoginGuestView(APIView):
 class SignupGuestView(APIView):
     authentication_classes = []
     permission_classes = []
-    parser_classes = [MultiPartParser]
 
     @extend_schema(
         tags=['Guests'],
@@ -98,6 +100,8 @@ class SignupGuestView(APIView):
 
 
 class SetupGuestProfileForExistingUser(APIView):
+    parser_classes = [MultiPartParser]
+
     @extend_schema(
         tags=['Guests'],
         summary='Quick profile setup',
@@ -106,7 +110,12 @@ class SetupGuestProfileForExistingUser(APIView):
     def post(self, request):
         profile_request = serializers.QuickProfileRequestSerializer(data=self.request.data)
         if profile_request.is_valid():
-            services.setup_guest_profile_for_existing_user(self.request.user, profile_request.data)
+            created = services.setup_guest_profile_for_existing_user(self.request.user, profile_request.validated_data)
+            if created:
+                return Response(data={'detail': 'Your profile has been created successfully'},
+                                status=status.HTTP_200_OK)
+            else:
+                raise ValidationError({'detail': 'You have already an existing profile *__*'})
         raise ValidationError(profile_request.errors)
 
 

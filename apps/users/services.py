@@ -16,10 +16,13 @@ from .models import User, Activation
 from apps.guests.models import Guest
 
 
-def authenticate_guest(login_request: dict):
+def authenticate_guest(login_request: dict) -> dict | int:
     user: User = authenticate(email=login_request['email'], password=login_request['password'])
     if user is not None:
-        return generate_tokens_for_guest(user)
+        if user.is_active:
+            return generate_tokens_for_guest(user)
+        else:
+            return generate_confirmation_code(user).activation_code
     else:
         return None
 
@@ -37,8 +40,8 @@ def generate_tokens_for_guest(user: User):
     refresh_token = RefreshToken.for_user(user)
     tokens = {
         'access': str(refresh_token.access_token),
-        'refresh': str(refresh_token)
-        # 'has_guest_acc': bool(user.guest)
+        'refresh': str(refresh_token),
+        'has_guest_acc': user.has_guest_account()
     }
     return tokens
 
@@ -63,9 +66,14 @@ def register_new_user(signup_request: dict):
 
 
 def setup_guest_profile_for_existing_user(user: User, profile_request: dict):
-    guest = Guest.objects.create_guest(
-        user, profile_request['first_name'], profile_request['last_name']
+    guest, created = Guest.objects.get_or_create(
+        user=user, defaults={
+            'first_name': profile_request['first_name'],
+            'last_name': profile_request['last_name'],
+            'profile_pic': profile_request['profile_pic']
+        }
     )
+    return created
 
 
 def is_email_already_exists(email: str):

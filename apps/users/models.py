@@ -1,5 +1,6 @@
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Index, CheckConstraint, Q
 from django.utils.timezone import now
@@ -38,6 +39,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_account_status(self):
         return AccountStatus[self.status]
+
+    def has_guest_account(self):
+        try:
+            return self.guest is not None
+        except ObjectDoesNotExist as e:
+            return False
 
     class Meta:
         db_table = 'users'

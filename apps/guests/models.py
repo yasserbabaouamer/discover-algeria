@@ -19,7 +19,7 @@ class Guest(models.Model):
     birthday = models.DateField(null=True)
     phone = models.CharField(max_length=20, null=True)
     country = models.ForeignKey(Country, related_name='guests', on_delete=models.CASCADE, null=True)
-    profile_pic = models.URLField(null=True)
+    profile_pic = models.ImageField(null=True)
     preferred_currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.DZD.value)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
