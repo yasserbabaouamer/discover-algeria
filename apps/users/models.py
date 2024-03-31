@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Index, CheckConstraint, Q
 from django.utils.timezone import now
+from rest_framework.exceptions import NotFound
 
 from apps.users.enums import *
 
@@ -26,6 +27,12 @@ class UserManager(BaseUserManager):
 
     def is_email_already_exists(self, email: str):
         return self.filter(email=email).exists()
+
+    def find_by_email(self, email: str):
+        try:
+            return self.get(email=email)
+        except ObjectDoesNotExist as e:
+            raise NotFound({'detail': 'No such user account With this email address'})
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -58,10 +65,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         ]
 
 
-class Activation(models.Model):
+class ConfirmationCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.SET_NULL, related_name='activation', null=True)
-    token = models.UUIDField(unique=True, max_length=100)
-    activation_code = models.IntegerField()
+    code = models.CharField(max_length=255)
     is_used = models.BooleanField(default=False)
     expires_at = models.DateTimeField()
 
@@ -69,7 +75,31 @@ class Activation(models.Model):
         return now() > self.expires_at
 
     class Meta:
-        db_table = 'activations'
+        db_table = 'confirmation_codes'
+
+
+class PasswordResetCodeManager(models.Manager):
+
+    def find_by_token(self, token):
+        try:
+            return self.get(token=token)
+        except ObjectDoesNotExist as e:
+            raise NotFound({'detail': 'No such record With this provided token'})
+
+
+class PasswordResetCode(models.Model):
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, related_name='password_reset', null=True)
+    token = models.UUIDField(unique=True, max_length=100, null=True)
+    code = models.CharField(max_length=255)
+    is_used = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+    objects = PasswordResetCodeManager()
+
+    def is_expired(self):
+        return now() > self.expires_at
+
+    class Meta:
+        db_table = 'password_reset_codes'
 
 
 class Identity(models.Model):

@@ -9,4 +9,7 @@ urlpatterns = [
     path('guests/setup-profile/', SetupGuestProfileForExistingUser.as_view()),
     path('auth/confirm/', ConfirmationView.as_view()),
     path('auth/confirm/resend/', ResendConfirmationView.as_view()),
+    path('auth/password-reset/', ResetPasswordView.as_view()),
+    path('auth/password-reset/verify/', VerifyResetPasswordView.as_view()),
+    path('auth/password-reset/complete/', CompletePasswordResetView.as_view()),
 ]

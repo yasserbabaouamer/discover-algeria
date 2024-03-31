@@ -1,2 +1,3 @@
 .env
 core/settings/local.py
+media

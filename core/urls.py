@@ -9,6 +9,7 @@ urlpatterns = [
     path(BASE_URL, include('apps.hotels.urls')),
     path(BASE_URL, include('apps.touristicagencies.urls')),
     path(BASE_URL, include('apps.blogs.urls')),
+    path(BASE_URL, include('apps.search.urls')),
     path(BASE_URL + "schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         BASE_URL + "docs/", SpectacularSwaggerView.as_view(),

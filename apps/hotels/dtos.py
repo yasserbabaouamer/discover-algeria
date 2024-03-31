@@ -1,8 +1,9 @@
 import datetime
 import typing
 from dataclasses import dataclass
+from typing import List
 
-from apps.hotels.models import Amenity
+from apps.hotels.models import Amenity, BedType, AmenityCategory
 
 
 @dataclass
@@ -18,6 +19,19 @@ class AmenityDTO:
     id: int
     name: str
     icon: str
+
+
+@dataclass
+class RoomTypeDTO:
+    id: int
+    name: str
+    size: float
+    nb_beds: int
+    main_bed_type: BedType
+    price_per_night: int
+    cover_img: str
+    nb_available_rooms: int
+    categories: dict
 
 
 @dataclass

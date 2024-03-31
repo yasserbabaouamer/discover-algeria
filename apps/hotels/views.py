@@ -1,10 +1,12 @@
 from drf_spectacular.utils import extend_schema
+from jsonschema.exceptions import ValidationError
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import services, serializers
-from .serializers import ReviewDtoSerializer
 
 
 class GetMostVisitedHotelsView(APIView):
@@ -22,7 +24,7 @@ class GetMostVisitedHotelsView(APIView):
         return Response(data=hotels_serializer.data, status=status.HTTP_200_OK)
 
 
-class HotelAPIView(APIView):
+class HotelView(APIView):
     authentication_classes = []
     permission_classes = []
 
@@ -33,15 +35,11 @@ class HotelAPIView(APIView):
     )
     def get(self, request, hotel_id):
         hotel = services.get_hotel_details_by_id(hotel_id)
-        if hotel is not None:
-            print(hotel)
-            serialized_hotel = serializers.HotelDetailsSerializer(hotel)
-            return Response(data=serialized_hotel.data, status=status.HTTP_200_OK)
-        return Response(data={'msg': f"Hotel with id : {hotel_id} does not exist"},
-                        status=status.HTTP_400_BAD_REQUEST)
+        serialized_hotel = serializers.HotelDetailsSerializer(hotel)
+        return Response(data=serialized_hotel.data, status=status.HTTP_200_OK)
 
 
-class HotelReviewsAPIView(APIView):
+class HotelReviewsView(APIView):
     authentication_classes = []
     permission_classes = []
 
@@ -52,9 +50,33 @@ class HotelReviewsAPIView(APIView):
     )
     def get(self, request, hotel_id):
         hotel_reviews = services.get_reviews_by_hotel_id(hotel_id)
-        print(hotel_reviews)
-        serialized_reviews = ReviewDtoSerializer(instance=hotel_reviews, many=True)
+        serialized_reviews = serializers.ReviewDtoSerializer(instance=hotel_reviews, many=True)
         return Response(data=serialized_reviews.data, status=status.HTTP_200_OK)
+
+
+class GetHotelRoomTypes(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        summary='Get The Room Types of a Specific Hotel',
+        responses={200: serializers.RoomTypeDtoSerializer}
+    )
+    def get(self, request, hotel_id):
+        room_types = services.get_room_types_by_hotel_id(hotel_id)
+        print(room_types)
+        response = serializers.RoomTypeDtoSerializer(room_types, many=True)
+        return Response(data=response.data, status=status.HTTP_200_OK)
+
+
+class RoomReservationView(APIView):
+
+    def post(self, request):
+        reservation_request = serializers.RoomReservationRequestSerializer(data=request.data)
+        if reservation_request.is_valid():
+            services.reserve_hotel_room(self.request.user, reservation_request.validated_data)
+            return Response({'detail': "Your reservation has been created successfully"})
+        raise ValidationError(detail=reservation_request.errors)
 
 
 class FillDb(APIView):

@@ -13,5 +13,6 @@ class UserTests(TestCase):
         print(destinations)
 
 
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,25 @@
+from datetime import datetime
+
+from django.db import models
+from django.db.models import Q, QuerySet
+
+
+class RoomManager(models.Manager):
+    def get_available_rooms_by_room_type(self, room_type_id: int, check_in: datetime, check_out: datetime) -> QuerySet:
+        reserved_rooms = self.filter(
+            Q(room_type_id=room_type_id)
+            & (
+                    Q(assignments__reserved_room_type__reservation__check_in__gt=check_in) &
+                    Q(assignments__reserved_room_type__reservation__check_in__lt=check_out)
+                    |
+                    Q(assignments__reserved_room_type__reservation__check_in__lte=check_in) &
+                    Q(assignments__reserved_room_type__reservation__check_out__gte=check_out)
+                    |
+                    Q(assignments__reserved_room_type__reservation__check_out__gt=check_in) &
+                    Q(assignments__reserved_room_type__reservation__check_out__lt=check_out)
+
+            )
+        ).all()
+        reserved_rooms_ids = reserved_rooms.values_list('id', flat=True)
+        available_rooms = self.filter(room_type_id=room_type_id).exclude(id__in=reserved_rooms_ids).all()
+        return available_rooms

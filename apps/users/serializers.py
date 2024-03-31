@@ -1,3 +1,4 @@
+from django.contrib.auth.password_validation import MinimumLengthValidator
 from rest_framework import serializers as rest_serializers
 from rest_framework.exceptions import ValidationError
 
@@ -20,15 +21,6 @@ class GuestSignupRequestSerializer(rest_serializers.Serializer):
         return attrs
 
 
-class ConfirmationRequestSerializer(rest_serializers.Serializer):
-    token = rest_serializers.UUIDField()
-    confirmation_code = rest_serializers.IntegerField()
-
-
-class ResendConfirmationRequestSerializer(rest_serializers.Serializer):
-    token = rest_serializers.UUIDField()
-
-
 class QuickProfileRequestSerializer(rest_serializers.Serializer):
     first_name = rest_serializers.CharField(max_length=255)
     last_name = rest_serializers.CharField(max_length=255)
@@ -49,3 +41,13 @@ class TokensSerializer(rest_serializers.Serializer):
 
 class EmailSerializer(rest_serializers.Serializer):
     email = rest_serializers.EmailField()
+
+
+class ConfirmationCodeRequestSerializer(rest_serializers.Serializer):
+    email = rest_serializers.EmailField()
+    confirmation_code = rest_serializers.IntegerField()
+
+
+class CompletePasswordResetRequestSerializer(rest_serializers.Serializer):
+    token = rest_serializers.UUIDField()
+    new_password = rest_serializers.CharField(max_length=255)

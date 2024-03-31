@@ -1,16 +1,30 @@
+from datetime import datetime
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import CheckConstraint, Q, Index, Count, Avg, Min, QuerySet
+from django.db.models import CheckConstraint, Q, Index, Count, Avg, Min, QuerySet, Func, FloatField, F, Value
+from rest_framework.exceptions import NotFound, ValidationError
 
+from . import managers
 from apps.destinations.models import City
 from apps.guests.models import Guest
 from apps.hotels.enums import ReservationStatus
+
+
+class LevenshteinRatio(Func):
+    function = "_levenshtein_ratio"
+    output_field = FloatField()
+
+
+class AmenityCategoryManager(models.Manager):
+    pass
 
 
 class AmenityCategory(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
     icon = models.URLField(null=True)
+    objects = AmenityCategoryManager()
 
     class Meta:
         db_table = 'amenity_categories'
@@ -35,11 +49,18 @@ class HotelManager(models.Manager):
             starts_at=Min('room_types__price_per_night')
         ).order_by('-reservations_count')
 
-    def get_hotel_by_id(self, hotel_id: int):
+    def find_by_id(self, hotel_id: int):
         try:
-            return self.prefetch_related('room_types', 'amenities').get(pk=hotel_id)
+            return self.get(pk=hotel_id)
         except ObjectDoesNotExist as e:
-            return None
+            raise NotFound({'detail': 'No Such Hotel with this id'})
+
+    def find_by_keyword(self, keyword):
+        return self.annotate(
+            name_ratio=LevenshteinRatio(F('name'), Value(keyword))
+        ).filter(
+            name_ratio__gt=0.1
+        ).order_by('-name_ratio').all()
 
 
 class Hotel(models.Model):
@@ -50,7 +71,7 @@ class Hotel(models.Model):
     longitude = models.FloatField(null=True)
     latitude = models.FloatField(null=True)
     website_url = models.URLField(null=True)
-    cover_img = models.URLField(null=True)
+    cover_img = models.ImageField(null=True)
     about = models.TextField(null=True)  # For longer text descriptions
     business_email = models.EmailField(null=True)
     contact_number = models.CharField(max_length=20)
@@ -77,10 +98,33 @@ class HotelImage(models.Model):
 
 class BedType(models.Model):
     name = models.CharField(max_length=50)
-    icon = models.URLField(null=True)
+    icon = models.ImageField(null=True)
 
     class Meta:
         db_table = 'bed_types'
+
+
+class RoomTypeManager(models.Manager):
+    def find_by_id(self, room_type_id):
+        try:
+            return self.get(pk=room_type_id)
+        except ObjectDoesNotExist as e:
+            raise NotFound({'detail': 'No Such Room Type with this id'})
+
+    def get_categories_and_amenities(self, room_type_id):
+        # Get the RoomType instance based on the provided ID
+        room_type = self.find_by_id(room_type_id)
+        # Access the related amenities using the amenities attribute
+        amenities = room_type.amenities.all()
+        # Retrieve the categories of those amenities and their associated amenities
+        categories = {}
+        for amenity in amenities:
+            category = amenity.category
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(amenity)
+
+        return categories
 
 
 class RoomType(models.Model):
@@ -93,29 +137,67 @@ class RoomType(models.Model):
     cover_img = models.ImageField(null=True)
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_types')
     amenities = models.ManyToManyField(Amenity, db_table='room_type_amenities')  #
+    objects = RoomTypeManager()
 
     class Meta:
         db_table = 'room_types'
 
 
+class RoomTypePolicy(models.Model):
+    room_type = models.ForeignKey(RoomType, on_delete=models.SET_NULL, null=True, related_name='policy')
+    name = models.CharField(max_length=255)
+    free_cancellation_days = models.IntegerField()
+    breakfast_included = models.BooleanField()
+    prepayment_required = models.BooleanField()
+
+    class Meta:
+        db_table = 'room_type_policy'
+
+
 class Room(models.Model):
     id = models.AutoField(primary_key=True)
     code = models.IntegerField()
-    description = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, null=True)
     number_of_guests = models.PositiveIntegerField()
     room_type = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name='rooms')
+    objects = managers.RoomManager()
 
     class Meta:
         db_table = 'rooms'
 
 
+class ReservationManager(models.Manager):
+
+    def create_reservation(self, guest: Guest, first_name, last_name, email,
+                           check_in: datetime, check_out: datetime, total_price, hotel):
+        return self.create(
+            guest=guest,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            check_in=check_in,
+            check_out=check_out,
+            total_price=total_price,
+            hotel=hotel,
+            status=ReservationStatus.ACCEPTED.value
+        )
+
+
 class Reservation(models.Model):
     id = models.AutoField(primary_key=True)
     guest = models.ForeignKey(Guest, related_name='reservations', on_delete=models.CASCADE)
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    first_name = models.CharField(max_length=255, null=True)
+    last_name = models.CharField(max_length=255, null=True)
+    email = models.EmailField(null=True)
+    check_in = models.DateTimeField()
+    check_out = models.DateTimeField()
     total_price = models.BigIntegerField()
-    status = models.CharField(max_length=50, choices=ReservationStatus.choices)
+    status = models.CharField(max_length=50, choices=ReservationStatus.choices,
+                              default=ReservationStatus.ACCEPTED.value)
+    hotel = models.ForeignKey(Hotel, on_delete=models.SET_NULL, null=True, related_name='reservations')
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+    objects = ReservationManager()
 
     class Meta:
         db_table = 'reservations'
@@ -130,6 +212,13 @@ class ReservedRoomType(models.Model):
     reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, related_name="reserved_room_types")
     room_type = models.ForeignKey(RoomType, on_delete=models.CASCADE)
     nb_rooms = models.PositiveIntegerField()
+
+    def clean(self):
+        if self.reservation.hotel != self.room_type.hotel:
+            raise ValidationError({
+                'detail': 'One of your selected room types does not have'
+                          ' the same hotel as what you specified in the '
+                          'request'})
 
     class Meta:
         db_table = 'reserved_room_types'
@@ -146,7 +235,7 @@ class RoomAssignment(models.Model):
 class GuestReviewManager(models.Manager):
 
     def get_reviews_by_hotel_id(self, hotel_id):
-        return self.filter(reservation__reserved_room_types__room_type__hotel_id=hotel_id).all()
+        return self.filter(reservation__hotel_id=hotel_id).all()
 
 
 class GuestReview(models.Model):

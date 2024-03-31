@@ -3,28 +3,30 @@ import uuid
 from datetime import datetime, timedelta
 from threading import Thread
 
+import django.contrib.auth.password_validation
 import rest_framework
 from decouple import config
 from django.contrib.auth import authenticate, password_validation
+from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.db import transaction
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from .models import User, Activation
 from apps.guests.models import Guest
+from .models import User, ConfirmationCode, PasswordResetCode
 
 
-def authenticate_guest(login_request: dict) -> dict | int:
+def authenticate_guest(login_request: dict) -> dict | None:
     user: User = authenticate(email=login_request['email'], password=login_request['password'])
     if user is not None:
         if user.is_active:
             return generate_tokens_for_guest(user)
         else:
-            return generate_confirmation_code(user).activation_code
-    else:
-        return None
+            Thread(target=generate_and_send_confirmation_code, args=(user,)).start()
+            return None
+    raise AuthenticationFailed({'detail': 'Authentication failed , invalid information'})
 
 
 def generate_access_token(user: User):
@@ -60,9 +62,8 @@ def register_new_user(signup_request: dict):
             signup_request['email'],
             signup_request['password']
         )
-        activation = generate_confirmation_code(user)
-        Thread(target=send_confirmation_code, args=(user.email, activation.activation_code)).start()
-        return activation.token
+        confirmation_code = generate_confirmation_code(user)
+        Thread(target=send_confirmation_code, args=(user.email, confirmation_code)).start()
 
 
 def setup_guest_profile_for_existing_user(user: User, profile_request: dict):
@@ -80,23 +81,19 @@ def is_email_already_exists(email: str):
     return User.objects.is_email_already_exists(email)
 
 
-def generate_confirmation_code(user) -> Activation:
-    _random = secrets.randbelow(1000000)
-    user_token = uuid.uuid4()
+def generate_confirmation_code(user) -> int:
+    code = secrets.randbelow(1000000)
     expires_at = datetime.now() + timedelta(minutes=10)
-    if Activation.objects.filter(activation_code=_random, expires_at__gt=datetime.now()).exists():
-        generate_confirmation_code(user)
-    activation, created = Activation.objects.get_or_create(user=user, defaults={
-        'activation_code': _random,
-        'token': user_token,
+    hashed_code = make_password(str(code))
+    confirmation_code, created = ConfirmationCode.objects.get_or_create(user=user, defaults={
+        'code': hashed_code,
         'expires_at': expires_at
     })
     if not created:
-        activation.activation_code = _random
-        activation.token = user_token
-        activation.expires_at = expires_at
-        activation.save()
-    return activation
+        confirmation_code.code = hashed_code
+        confirmation_code.expires_at = expires_at
+        confirmation_code.save()
+    return code
 
 
 def send_confirmation_code(email, code):
@@ -107,11 +104,15 @@ def send_confirmation_code(email, code):
     send_mail(subject, message, from_email, recipient_list)
 
 
+def generate_and_send_confirmation_code(user: User):
+    confirmation_code = generate_confirmation_code(user)
+    send_confirmation_code(user.email, confirmation_code)
+
+
 def activate_user(confirmation_request: dict):
     try:
-        user = User.objects.get(activation__token=str(confirmation_request['token']))
-        print(user.email)
-        if (user.activation.activation_code == confirmation_request['confirmation_code']
+        user = User.objects.find_by_email(confirmation_request['email'])
+        if (check_password(str(confirmation_request['confirmation_code']), user.activation.code)
                 and not user.activation.is_expired()
                 and not user.activation.is_used):
             with transaction.atomic():
@@ -126,17 +127,69 @@ def activate_user(confirmation_request: dict):
         raise ValidationError({'detail': e})
 
 
-def resend_confirmation_code(resend_request: dict):
-    try:
-        user = User.objects.get(activation__token=resend_request['token'])
-        if user.is_active:
-            raise ValidationError({'detail': 'Your account is already activated'})
-        activation = generate_confirmation_code(user)
-        Thread(target=send_confirmation_code, args=(user.email, activation.activation_code)).start()
-        return activation.token
-    except ObjectDoesNotExist as e:
-        raise ValidationError({'detail': 'Invalid token'})
+def resend_confirmation_code(request: dict):
+    user = User.objects.find_by_email(request['email'])
+    if user.is_active:
+        raise ValidationError({'detail': 'Your account is already activated'})
+    confirmation_code = generate_confirmation_code(user)
+    Thread(target=send_confirmation_code, args=(user.email, confirmation_code)).start()
 
 
 def is_email_exists(email_request: dict):
     return User.objects.is_email_already_exists(email_request['email'])
+
+
+"""Password Reset Methods"""
+
+
+def generate_password_reset_code(user: User):
+    code = secrets.randbelow(1000000)
+    expires_at = datetime.now() + timedelta(minutes=15)
+    hashed_code = make_password(str(code))
+    password_reset, created = PasswordResetCode.objects.get_or_create(user=user, defaults={
+        'code': hashed_code,
+        'expires_at': expires_at
+    })
+    if not created:
+        password_reset.code = hashed_code
+        password_reset.expires_at = expires_at
+        password_reset.save()
+    return code
+
+
+def send_password_reset_code(email, code):
+    subject = 'Your Password Reset Code'
+    message = f'Your password reset code is: {str(code)}'
+    from_email = config('EMAIL_ADDRESS')
+    recipient_list = [email]
+    send_mail(subject, message, from_email, recipient_list)
+
+
+def reset_password(request: dict):
+    user = User.objects.find_by_email(request['email'])
+    reset_code = generate_password_reset_code(user)
+    Thread(target=send_password_reset_code, args=(user.email, reset_code)).start()
+
+
+def generate_token_for_password_reset(confirmation_request):
+    user = User.objects.find_by_email(confirmation_request['email'])
+    if (check_password(str(confirmation_request['confirmation_code']), user.password_reset.code)
+            and not user.password_reset.is_expired()
+            and not user.password_reset.is_used):
+        token = uuid.uuid4()
+        user.password_reset.token = token
+        user.password_reset.is_used = True
+        user.password_reset.save()
+        return token
+    raise ValidationError({'detail': 'Invalid confirmation code or expired'})
+
+
+def update_password(complete_request: dict):
+    password_reset = PasswordResetCode.objects.find_by_token(complete_request['token'])
+    user = password_reset.user
+    try:
+        password_validation.validate_password(complete_request['new_password'])
+    except django.contrib.auth.password_validation.ValidationError as e:
+        raise ValidationError({'detail': e})
+    user.set_password(complete_request['new_password'])
+    user.save()
