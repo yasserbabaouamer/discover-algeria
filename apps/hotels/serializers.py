@@ -1,4 +1,4 @@
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from rest_framework import serializers as rest_serializers
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework_dataclasses.serializers import DataclassSerializer
@@ -73,10 +73,20 @@ class RoomReservationRequestSerializer(rest_serializers.Serializer):
     first_name = rest_serializers.CharField(max_length=255)
     last_name = rest_serializers.CharField(max_length=255)
     email = rest_serializers.EmailField()
-    hotel_id = rest_serializers.IntegerField()
+    country = rest_serializers.IntegerField(validators=[MinValueValidator(0)])
+    phone = rest_serializers.IntegerField(validators=[RegexValidator(regex="^\d{7,15}$")])
+    hotel_id = rest_serializers.IntegerField(validators=[MinValueValidator(0)])
     check_in = rest_serializers.DateField()
     check_out = rest_serializers.DateField()
     requested_room_types = RoomTypeRequestSerializer(many=True)
+
+    def validate(self, data):
+        # Check that start_date is before end_date.
+        check_in = data.get('check_in')
+        check_out = data.get('check_out')
+        if check_in >= check_out:
+            raise rest_serializers.ValidationError({'detail': "End date must be after start date"})
+        return data
 
 
 class BedTypeSerializer(rest_serializers.ModelSerializer):
@@ -98,4 +108,3 @@ class RoomTypeDtoSerializer(DataclassSerializer):
 class GetHotelAvailableRoomTypesRequestSerializer(rest_serializers.Serializer):
     check_in = rest_serializers.DateField(required=False)
     check_out = rest_serializers.DateField(required=False)
-

@@ -1,5 +1,7 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q, FloatField, Func, F, Value
+from django.db.models import Q, FloatField, Func, F, Value, Count
+from rest_framework.exceptions import NotFound
 
 
 # Create your models here.
@@ -8,9 +10,19 @@ class LevenshteinRatio(Func):
     output_field = FloatField()
 
 
+class CountryManger(models.Manager):
+    def find_by_id(self, country_id):
+        try:
+            return self.get(pk=country_id)
+        except ObjectDoesNotExist as e:
+            raise NotFound({'detail': 'No such country with this id'})
+
+
 class Country(models.Model):
     name = models.CharField(max_length=255)
-    flag = models.URLField(null=True)
+    flag = models.ImageField(upload_to='destinations/', null=True)
+    country_code = models.PositiveIntegerField(null=True)
+    objects = CountryManger()
 
     class Meta:
         db_table = 'countries'
@@ -25,12 +37,32 @@ class CityManager(models.Manager):
             name_ratio__gt=0.1
         ).order_by('-name_ratio').all()
 
+    def find_by_id(self, _id: int):
+        try:
+            return self.get(pk=_id)
+        except ObjectDoesNotExist as e:
+            raise NotFound({'detail': 'No such city with this id'})
+
+    def find_top_cities(self):
+        return self.annotate(
+            reservations_count=Count('hotels__room_types__reservations')
+        ).order_by('-reservations_count').all()
+
 
 class City(models.Model):
     name = models.CharField(max_length=255)
-    cover_img = models.ImageField(default='img')
+    cover_img = models.ImageField(upload_to='destinations/')
+    description = models.TextField(null=True)
     country = models.ForeignKey(Country, related_name='cities', on_delete=models.SET_NULL, null=True)
     objects = CityManager()
 
     class Meta:
         db_table = 'cities'
+
+
+class CityImage(models.Model):
+    city = models.ForeignKey(City, related_name='images', on_delete=models.SET_NULL, null=True)
+    image = models.ImageField(upload_to='destinations/')
+
+    class Meta:
+        db_table = 'city_images'

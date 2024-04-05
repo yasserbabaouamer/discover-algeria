@@ -6,27 +6,15 @@ from threading import Thread
 import django.contrib.auth.password_validation
 import rest_framework
 from decouple import config
-from django.contrib.auth import authenticate, password_validation
+from django.contrib.auth import password_validation
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.db import transaction
-from rest_framework.exceptions import ValidationError, AuthenticationFailed
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from apps.guests.models import Guest
 from .models import User, ConfirmationCode, PasswordResetCode
-
-
-def authenticate_guest(login_request: dict) -> dict | None:
-    user: User = authenticate(email=login_request['email'], password=login_request['password'])
-    if user is not None:
-        if user.is_active:
-            return generate_tokens_for_guest(user)
-        else:
-            Thread(target=generate_and_send_confirmation_code, args=(user,)).start()
-            return None
-    raise AuthenticationFailed({'detail': 'Authentication failed , invalid information'})
 
 
 def generate_access_token(user: User):
@@ -36,16 +24,6 @@ def generate_access_token(user: User):
         'access': str(access_token)
     }
     return access
-
-
-def generate_tokens_for_guest(user: User):
-    refresh_token = RefreshToken.for_user(user)
-    tokens = {
-        'access': str(refresh_token.access_token),
-        'refresh': str(refresh_token),
-        'has_guest_acc': user.has_guest_account()
-    }
-    return tokens
 
 
 def register_new_user(signup_request: dict):
@@ -64,17 +42,6 @@ def register_new_user(signup_request: dict):
         )
         confirmation_code = generate_confirmation_code(user)
         Thread(target=send_confirmation_code, args=(user.email, confirmation_code)).start()
-
-
-def setup_guest_profile_for_existing_user(user: User, profile_request: dict):
-    guest, created = Guest.objects.get_or_create(
-        user=user, defaults={
-            'first_name': profile_request['first_name'],
-            'last_name': profile_request['last_name'],
-            'profile_pic': profile_request['profile_pic']
-        }
-    )
-    return created
 
 
 def is_email_already_exists(email: str):
@@ -120,7 +87,11 @@ def activate_user(confirmation_request: dict):
                 user.save()
                 user.activation.is_used = True
                 user.activation.save()
-                return generate_tokens_for_guest(user)
+                refresh = RefreshToken.for_user(user)
+                return {
+                    'access': refresh.access_token,
+                    'refresh': refresh.token
+                }
         else:
             raise ValidationError({'detail': 'Invalid confirmation code'})
     except ObjectDoesNotExist as e:

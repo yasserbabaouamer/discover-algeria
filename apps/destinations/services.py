@@ -1,11 +1,16 @@
 from django.db.models import Count, QuerySet
 
-from apps.destinations.models import City
+from .dtos import *
+from .models import City
+from .converters import *
+
+city_dto_converter = CityDtoConverter()
 
 
 def get_top_destinations() -> QuerySet:
-    cities = City.objects.annotate(
-        reservations_count=Count('hotels__room_types__reservations')
-    ).order_by('-reservations_count')
-    return cities
+    return City.objects.find_top_cities()
 
+
+def get_city_details_by_id(city_id: int) -> CityDetailsDTO:
+    city = City.objects.find_by_id(city_id)
+    return city_dto_converter.convert_city_to_dto(city)

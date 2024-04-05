@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from . import services, serializers
@@ -16,9 +18,24 @@ class TopDestinationsView(APIView):
     @extend_schema(
         tags=['Destinations'],
         summary='Get Top Destinations',
-        responses={200: serializers.DestinationSerializer}
+        responses={200: serializers.CitySerializer}
     )
     def get(self, request):
         cities = services.get_top_destinations()
-        cities_serializer = serializers.DestinationSerializer(cities, many=True)
+        cities_serializer = serializers.CitySerializer(cities, many=True)
         return Response(data=cities_serializer.data, status=status.HTTP_200_OK)
+
+
+class GetCityDetailsView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        try:
+            city_id = self.request.query_params['id']
+            city = services.get_city_details_by_id(city_id)
+            print(city)
+            response = serializers.CityDetailsSerializer(city)
+            return Response(data=response.data, status=status.HTTP_200_OK)
+        except KeyError as e:
+            raise ValidationError({'detail': 'Provide a city id'})

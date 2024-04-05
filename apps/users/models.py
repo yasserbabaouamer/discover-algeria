@@ -103,7 +103,7 @@ class PasswordResetCode(models.Model):
 
 
 class Identity(models.Model):
-    id_pic = models.URLField()
+    id_pic = models.ImageField(upload_to='identities/')
     status = models.CharField(max_length=10, choices=IdentityStatus.choices)
 
     class Meta:

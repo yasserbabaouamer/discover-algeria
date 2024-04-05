@@ -7,5 +7,5 @@ from apps.search import services
 
 class LTestCase(TestCase):
     def test_search_tours(self):
-        result = services.search_tours('Hide')
+        result = services.quick_search_tours('Hide')
         print(result)

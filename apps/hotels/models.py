@@ -1,12 +1,13 @@
 from datetime import datetime
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import CheckConstraint, Q, Index, Count, Avg, Min, QuerySet, Func, FloatField, F, Value
 from rest_framework.exceptions import NotFound, ValidationError
 
 from . import managers
-from apps.destinations.models import City
+from apps.destinations.models import City, Country
 from apps.guests.models import Guest
 from apps.hotels.enums import ReservationStatus
 
@@ -23,7 +24,7 @@ class AmenityCategoryManager(models.Manager):
 class AmenityCategory(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    icon = models.URLField(null=True)
+    icon = models.ImageField(upload_to='hotels/', null=True)
     objects = AmenityCategoryManager()
 
     class Meta:
@@ -33,7 +34,7 @@ class AmenityCategory(models.Model):
 class Amenity(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    icon = models.URLField(null=True)
+    icon = models.ImageField(upload_to='hotels/', null=True)
     category = models.ForeignKey(AmenityCategory, related_name='amenities', on_delete=models.CASCADE)
 
     class Meta:
@@ -62,6 +63,24 @@ class HotelManager(models.Manager):
             name_ratio__gt=0.1
         ).order_by('-name_ratio').all()
 
+    def find_available_hotels_by_city_id(self, city_id, check_in: datetime, check_out: datetime):
+        hotels = self.filter(city_id=city_id)
+        available_hotels = []
+        for hotel in hotels:
+            for room_type in hotel.room_types:
+                available_rooms = Room.objects.get_available_rooms_by_room_type(room_type.id, check_in, check_out)
+                if available_rooms.count() > 0:
+                    available_hotels.append(hotel)
+                    break
+        return available_hotels
+
+    def find_top_hotels_by_city_id(self, city_id: int):
+        return (self.annotate(
+            number_of_reviews=Count('reservations__review'),
+            avg_ratings=Avg('reservations__review__rating'),
+            starts_at=Min('room_types__price_per_night')
+        ).filter(city_id=city_id).order_by('-number_of_reviews').all())
+
 
 class Hotel(models.Model):
     id = models.AutoField(primary_key=True)
@@ -71,7 +90,7 @@ class Hotel(models.Model):
     longitude = models.FloatField(null=True)
     latitude = models.FloatField(null=True)
     website_url = models.URLField(null=True)
-    cover_img = models.ImageField(null=True)
+    cover_img = models.ImageField(upload_to='hotels/', null=True)
     about = models.TextField(null=True)  # For longer text descriptions
     business_email = models.EmailField(null=True)
     contact_number = models.CharField(max_length=20)
@@ -90,7 +109,7 @@ class Hotel(models.Model):
 
 class HotelImage(models.Model):
     hotel = models.ForeignKey(Hotel, related_name='images', on_delete=models.SET_NULL, null=True)
-    img = models.URLField(null=True)
+    img = models.ImageField(upload_to='hotels/', null=True)
 
     class Meta:
         db_table = 'hotel_images'
@@ -98,7 +117,7 @@ class HotelImage(models.Model):
 
 class BedType(models.Model):
     name = models.CharField(max_length=50)
-    icon = models.ImageField(null=True)
+    icon = models.ImageField(upload_to='hotels/', null=True)
 
     class Meta:
         db_table = 'bed_types'
@@ -134,7 +153,7 @@ class RoomType(models.Model):
     nb_beds = models.PositiveIntegerField()  # Positive integer for number of beds
     main_bed_type = models.ForeignKey(BedType, on_delete=models.SET_NULL, null=True)  #
     price_per_night = models.BigIntegerField()
-    cover_img = models.ImageField(null=True)
+    cover_img = models.ImageField(upload_to='hotels/', null=True)
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_types')
     amenities = models.ManyToManyField(Amenity, db_table='room_type_amenities')  #
     objects = RoomTypeManager()
@@ -168,13 +187,15 @@ class Room(models.Model):
 
 class ReservationManager(models.Manager):
 
-    def create_reservation(self, guest: Guest, first_name, last_name, email,
-                           check_in: datetime, check_out: datetime, total_price, hotel):
+    def create_reservation(self, guest: Guest, first_name, last_name, email, country,
+                           phone, check_in: datetime, check_out: datetime, total_price, hotel):
         return self.create(
             guest=guest,
             first_name=first_name,
             last_name=last_name,
             email=email,
+            countr=country,
+            phone=phone,
             check_in=check_in,
             check_out=check_out,
             total_price=total_price,
@@ -189,6 +210,8 @@ class Reservation(models.Model):
     first_name = models.CharField(max_length=255, null=True)
     last_name = models.CharField(max_length=255, null=True)
     email = models.EmailField(null=True)
+    country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
+    phone = models.PositiveIntegerField(validators=[RegexValidator(regex="^\d{7,15}$")])
     check_in = models.DateTimeField()
     check_out = models.DateTimeField()
     total_price = models.BigIntegerField()
@@ -235,7 +258,10 @@ class RoomAssignment(models.Model):
 class GuestReviewManager(models.Manager):
 
     def get_reviews_by_hotel_id(self, hotel_id):
-        return self.filter(reservation__hotel_id=hotel_id).all()
+        return self.annotate(
+            number_of_reviews=Count('id'),
+            avg_ratings=Avg('rating')
+        ).filter(reservation__hotel_id=hotel_id).all()
 
 
 class GuestReview(models.Model):

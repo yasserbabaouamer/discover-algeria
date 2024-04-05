@@ -11,6 +11,7 @@ class ReviewDTO:
     id: int
     title: str
     content: str
+    rating: int
     created_at: datetime.datetime
 
 

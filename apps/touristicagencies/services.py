@@ -1,5 +1,5 @@
-from .models import Tour
+from .models import PeriodicTour
 
 
 def get_top_tours():
-    return Tour.objects.get_top_tours()
+    return PeriodicTour.objects.find_top_tours()

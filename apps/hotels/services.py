@@ -7,6 +7,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.hotels.models import Hotel, Reservation, ReservedRoomType, RoomAssignment
 from .converters import *
+from ..destinations.models import Country
 from ..users.models import User
 
 hotel_converter = HotelDetailsConverter()
@@ -39,10 +40,10 @@ def get_reviews_by_hotel_id(hotel_id):
 
 
 def reserve_hotel_room(user: User, request: dict):
-    # Check Hotel Existence
+    # Check Hotel & Country Existence
     hotel = Hotel.objects.find_by_id(request['hotel_id'])
-    guest = user.guest
-    if guest:
+    country = Country.objects.find_by_id(request['country_id'])
+    if user.guest:
         check_in = request['check_in']
         check_out = request['check_out']
         nb_nights = (check_out - check_in).days
@@ -53,10 +54,12 @@ def reserve_hotel_room(user: User, request: dict):
             cursor = connection.cursor()
             cursor.execute('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE')
             reservation = Reservation.objects.create_reservation(
-                guest=guest,
+                guest=user.guest,
                 first_name=request['first_name'],
                 last_name=request['last_name'],
                 email=request['email'],
+                country=country,
+                phone=request['phone'],
                 check_in=check_in,
                 check_out=check_out,
                 total_price=total_price,
