@@ -7,10 +7,11 @@ from rest_framework.exceptions import ValidationError
 
 from apps.hotels.models import Hotel, Reservation, ReservedRoomType, RoomAssignment
 from .converters import *
+from .serializers import FilterRequestSerializer
 from ..destinations.models import Country
 from ..users.models import User
 
-hotel_converter = HotelDetailsConverter()
+hotel_converter = HotelDetailsDtoConverter()
 room_type_converter = RoomTypeConverter()
 
 
@@ -93,3 +94,23 @@ def calculate_total_price(requested_room_types, nb_nights) -> int:
         price_per_night = RoomType.objects.find_by_id(_id).price_per_night
         total_price += total_price + price_per_night * item['nb_rooms'] * nb_nights
     return total_price
+
+
+def filter_city_hotels(city_id, search_req: dict):
+    check_in = _datetime.combine(search_req['check_in'], time(13, 0))
+    check_out = _datetime.combine(search_req['check_out'], time(12, 0))
+    hotels = Hotel.objects.find_available_hotels_by_city_id(city_id, check_in, check_out)
+    print("Available Hotels :", hotels)
+    search_req.pop('check_in')
+    search_req.pop('check_out')
+    search_req.pop('number_of_adults')
+    search_req.pop('number_of_children')
+    for hotel in hotels:
+        for key, value in search_req.items():
+            if value:
+                if not Hotel.objects.has_amenity(hotel.id, FilterRequestSerializer.amenity_map[key]):
+                    hotels.remove(hotel)
+                    break
+
+    converter = HotelDetailsDtoConverter()
+    return converter.to_dtos_list(hotels)

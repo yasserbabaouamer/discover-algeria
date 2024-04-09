@@ -13,15 +13,19 @@ class ReviewToDTOConverter:
         return [self.to_dto(review) for review in reviews]
 
 
-class HotelDetailsConverter:
+class HotelDetailsDtoConverter:
     review_converter = ReviewToDTOConverter()
 
     def to_dto(self, hotel: Hotel) -> HotelDetailsDTO:
         return HotelDetailsDTO(
             hotel.id, hotel.name, hotel.stars, f"{hotel.address} , {hotel.city.name} , {hotel.city.country.name}",
-            hotel.longitude, hotel.latitude, hotel.website_url, hotel.cover_img.path, hotel.about, hotel.business_email,
+            hotel.number_of_reviews, hotel.avg_ratings, hotel.longitude, hotel.latitude,
+            hotel.website_url, hotel.cover_img.url, hotel.about, hotel.business_email,
             hotel.contact_number, hotel.amenities.all()
         )
+
+    def to_dtos_list(self, hotels) -> List[HotelDetailsDTO]:
+        return [self.to_dto(hotel) for hotel in hotels]
 
 
 class RoomTypeConverter:

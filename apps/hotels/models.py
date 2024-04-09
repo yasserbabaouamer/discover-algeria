@@ -52,7 +52,10 @@ class HotelManager(models.Manager):
 
     def find_by_id(self, hotel_id: int):
         try:
-            return self.get(pk=hotel_id)
+            return self.annotate(
+                number_of_reviews=Count('reservations__review'),
+                avg_ratings=Count('reservations__review__rating')
+            ).get(pk=hotel_id)
         except ObjectDoesNotExist as e:
             raise NotFound({'detail': 'No Such Hotel with this id'})
 
@@ -64,22 +67,35 @@ class HotelManager(models.Manager):
         ).order_by('-name_ratio').all()
 
     def find_available_hotels_by_city_id(self, city_id, check_in: datetime, check_out: datetime):
-        hotels = self.filter(city_id=city_id)
-        available_hotels = []
-        for hotel in hotels:
-            for room_type in hotel.room_types:
-                available_rooms = Room.objects.get_available_rooms_by_room_type(room_type.id, check_in, check_out)
-                if available_rooms.count() > 0:
-                    available_hotels.append(hotel)
-                    break
-        return available_hotels
-
-    def find_top_hotels_by_city_id(self, city_id: int):
-        return (self.annotate(
+        hotels = self.annotate(
             number_of_reviews=Count('reservations__review'),
             avg_ratings=Avg('reservations__review__rating'),
             starts_at=Min('room_types__price_per_night')
-        ).filter(city_id=city_id).order_by('-number_of_reviews').all())
+        ).filter(city_id=city_id).all()
+        print("City hotels ", hotels)
+        available_hotels = []
+        for hotel in hotels.all():
+            for room_type in hotel.room_types.all():
+                available_rooms = Room.objects.get_available_rooms_by_room_type(room_type.id, check_in, check_out)
+                if available_rooms.count() > 0:
+                    available_hotels.append(hotel)
+                break
+        return available_hotels
+
+
+    def has_amenity(self, hotel_id, amenity: str) -> bool:
+        return self.filter(
+            id=hotel_id,
+            room_types__amenities__name=amenity
+        ).exists()
+
+
+def find_top_hotels_by_city_id(self, city_id: int):
+    return (self.annotate(
+        number_of_reviews=Count('reservations__review'),
+        avg_ratings=Avg('reservations__review__rating'),
+        starts_at=Min('room_types__price_per_night')
+    ).filter(city_id=city_id).order_by('-number_of_reviews').all())
 
 
 class Hotel(models.Model):

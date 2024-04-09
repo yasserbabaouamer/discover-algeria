@@ -70,8 +70,3 @@ def get_available_hotels_by_city(search_request: dict):
     pass
 
 
-def do_advanced_search(request: dict):
-    results = []
-    # with ProcessPoolExecutor(max_workers=4) as executor:
-    #
-    # return None

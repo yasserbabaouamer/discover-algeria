@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework_dataclasses.serializers import DataclassSerializer
 
+from apps.hotels.models import Amenity
 from apps.search.dtos import SearchItem
 
 
@@ -41,9 +42,3 @@ class SearchByCitySerializer(serializers.Serializer):
         return data
 
 
-class SearchRequestSerializer(serializers.Serializer):
-    check_in = serializers.DateField(required=False, default=None)
-    check_out = serializers.DateField(required=False, default=None)
-    number_of_adults = serializers.IntegerField(required=False, default=2)
-    number_of_children = serializers.IntegerField(required=False, default=0)
-    wifi = serializers.BooleanField(required=False, default=None)

@@ -1,4 +1,8 @@
+import datetime
+from datetime import timedelta
+
 from django.core.validators import MinValueValidator, RegexValidator
+from django.utils import timezone
 from rest_framework import serializers as rest_serializers
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework_dataclasses.serializers import DataclassSerializer
@@ -108,3 +112,33 @@ class RoomTypeDtoSerializer(DataclassSerializer):
 class GetHotelAvailableRoomTypesRequestSerializer(rest_serializers.Serializer):
     check_in = rest_serializers.DateField(required=False)
     check_out = rest_serializers.DateField(required=False)
+
+
+class FilterRequestSerializer(rest_serializers.Serializer):
+    check_in = rest_serializers.DateField()
+    check_out = rest_serializers.DateField()
+    number_of_adults = rest_serializers.IntegerField(required=False, default=2)
+    number_of_children = rest_serializers.IntegerField(required=False, default=0)
+    amenities = Amenity.objects.all()
+    # Dynamically create serializer fields for each amenity
+    amenity_map = {}
+    for amenity in amenities:
+        field_name = amenity.name.lower().replace(' ', '_')
+        locals()[field_name] = rest_serializers.BooleanField(required=False, default=False)
+        amenity_map[field_name] = amenity.name
+
+    # Add dynamically created fields to the serializer class
+    amenity_fields = locals().copy()
+    amenity_fields.pop('amenities')  # Remove the amenities queryset
+    amenity_fields.pop('amenity')  # Remove the amenities model
+    locals().update(amenity_fields)
+
+    print(locals())
+
+    def validate(self, data):
+        # Check that start_date is before end_date.
+        check_in = data.get('check_in')
+        check_out = data.get('check_out')
+        if check_in >= check_out:
+            raise rest_serializers.ValidationError({'detail': "End date must be after start date"})
+        return data

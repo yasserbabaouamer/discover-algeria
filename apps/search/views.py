@@ -42,12 +42,4 @@ class QuickSearchView(APIView):
                                              'follow this pattern : ?keyword=value&type=value '})
 
 
-class DetailedSearchView(APIView):
-    authentication_classes = []
-    permission_classes = []
 
-    def get(self, _request):
-        request = serializers.GeneralSearchSerializer(data=self.request.data)
-        if request.is_valid():
-            search_results = services.do_advanced_search(request.validated_data)
-        raise ValidationError(request.errors)

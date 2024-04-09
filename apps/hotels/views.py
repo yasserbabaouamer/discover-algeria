@@ -1,4 +1,4 @@
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from jsonschema.exceptions import ValidationError
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
@@ -59,6 +59,7 @@ class GetHotelRoomTypes(APIView):
     permission_classes = []
 
     @extend_schema(
+        tags=['Hotels'],
         summary='Get The Room Types of a Specific Hotel',
         responses={200: serializers.RoomTypeDtoSerializer}
     )
@@ -70,13 +71,45 @@ class GetHotelRoomTypes(APIView):
 
 
 class RoomReservationView(APIView):
-
+    @extend_schema(
+        tags=['Hotels'],
+        summary='Reserve a hotel room',
+        request=serializers.RoomReservationRequestSerializer,
+        responses={
+            201: OpenApiResponse(description='Your reservation has been created successfully')
+        }
+    )
     def post(self, request):
         reservation_request = serializers.RoomReservationRequestSerializer(data=request.data)
         if reservation_request.is_valid():
             services.reserve_hotel_room(self.request.user, reservation_request.validated_data)
-            return Response({'detail': "Your reservation has been created successfully"})
+            return Response({'detail': "Your reservation has been created successfully"}, status.HTTP_201_CREATED)
         raise ValidationError(detail=reservation_request.errors)
+
+
+class SearchHotelsByCity(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        tags=['Hotels'],
+        summary='Filter City Hotels',
+        request=serializers.RoomReservationRequestSerializer,
+        responses={
+            201: OpenApiResponse(description='Your reservation has been created successfully')
+        }
+    )
+    def get(self, _request, *args, **kwargs):
+        city_id = kwargs.pop('city_id', None)
+        if city_id is None:
+            raise ValidationError({'detail': 'City id is required'})
+        request = serializers.FilterRequestSerializer(data=self.request.query_params.dict())
+        if request.is_valid():
+            print('Validated Data :', request.validated_data)
+            search_results = services.filter_city_hotels(city_id, request.validated_data)
+            response = serializers.HotelDetailsSerializer(search_results, many=True)
+            return Response(data=response.data, status=status.HTTP_200_OK)
+        raise ValidationError(request.errors)
 
 
 class FillDb(APIView):
