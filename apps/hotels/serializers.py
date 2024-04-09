@@ -119,6 +119,8 @@ class FilterRequestSerializer(rest_serializers.Serializer):
     check_out = rest_serializers.DateField()
     number_of_adults = rest_serializers.IntegerField(required=False, default=2)
     number_of_children = rest_serializers.IntegerField(required=False, default=0)
+    starts_at = rest_serializers.IntegerField(required=False)
+    ends_at = rest_serializers.IntegerField(required=False)
     amenities = Amenity.objects.all()
     # Dynamically create serializer fields for each amenity
     amenity_map = {}
@@ -141,4 +143,8 @@ class FilterRequestSerializer(rest_serializers.Serializer):
         check_out = data.get('check_out')
         if check_in >= check_out:
             raise rest_serializers.ValidationError({'detail': "End date must be after start date"})
+        if (data.get('starts_at') is None and data.get('ends_at') is not None
+                or data.get('starts_at') is not None and data.get('ends_at') is None):
+            raise rest_serializers.ValidationError({'detail': "Provide both range values or go to play away."})
+
         return data

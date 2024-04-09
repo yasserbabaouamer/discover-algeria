@@ -66,12 +66,13 @@ class HotelManager(models.Manager):
             name_ratio__gt=0.1
         ).order_by('-name_ratio').all()
 
-    def find_available_hotels_by_city_id(self, city_id, check_in: datetime, check_out: datetime):
+    def find_available_hotels_by_city_id(self, city_id, check_in: datetime, check_out: datetime,
+                                         price_starts_at: int, price_ends_at: int):
         hotels = self.annotate(
             number_of_reviews=Count('reservations__review'),
             avg_ratings=Avg('reservations__review__rating'),
             starts_at=Min('room_types__price_per_night')
-        ).filter(city_id=city_id).all()
+        ).filter(city_id=city_id, starts_at__gte=price_starts_at, starts_at__lte=price_ends_at).all()
         print("City hotels ", hotels)
         available_hotels = []
         for hotel in hotels.all():
@@ -81,7 +82,6 @@ class HotelManager(models.Manager):
                     available_hotels.append(hotel)
                 break
         return available_hotels
-
 
     def has_amenity(self, hotel_id, amenity: str) -> bool:
         return self.filter(

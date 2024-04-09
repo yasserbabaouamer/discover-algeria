@@ -112,6 +112,13 @@ class SearchHotelsByCity(APIView):
         raise ValidationError(request.errors)
 
 
+
+class GetFilters(ListAPIView):
+    authentication_classes = []
+    permission_classes = []
+
+
+
 class FillDb(APIView):
     authentication_classes = []
     permission_classes = []

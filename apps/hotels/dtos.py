@@ -41,6 +41,7 @@ class HotelDetailsDTO:
     name: str
     stars: int
     address: str
+    starts_at: int
     number_of_reviews: int
     avg_ratings: float
     longitude: float

@@ -19,7 +19,7 @@ class HotelDetailsDtoConverter:
     def to_dto(self, hotel: Hotel) -> HotelDetailsDTO:
         return HotelDetailsDTO(
             hotel.id, hotel.name, hotel.stars, f"{hotel.address} , {hotel.city.name} , {hotel.city.country.name}",
-            hotel.number_of_reviews, hotel.avg_ratings, hotel.longitude, hotel.latitude,
+            hotel.starts_at, hotel.number_of_reviews, hotel.avg_ratings, hotel.longitude, hotel.latitude,
             hotel.website_url, hotel.cover_img.url, hotel.about, hotel.business_email,
             hotel.contact_number, hotel.amenities.all()
         )

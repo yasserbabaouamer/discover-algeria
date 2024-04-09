@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime as _datetime
 from datetime import time
 
@@ -10,6 +11,8 @@ from .converters import *
 from .serializers import FilterRequestSerializer
 from ..destinations.models import Country
 from ..users.models import User
+
+MAX_LONG = 9223372036854775807
 
 hotel_converter = HotelDetailsDtoConverter()
 room_type_converter = RoomTypeConverter()
@@ -99,12 +102,21 @@ def calculate_total_price(requested_room_types, nb_nights) -> int:
 def filter_city_hotels(city_id, search_req: dict):
     check_in = _datetime.combine(search_req['check_in'], time(13, 0))
     check_out = _datetime.combine(search_req['check_out'], time(12, 0))
-    hotels = Hotel.objects.find_available_hotels_by_city_id(city_id, check_in, check_out)
+    price_starts_at = search_req.pop('starts_at', 0)
+    price_ends_at = search_req.pop('ends_at', MAX_LONG)
+    hotels = Hotel.objects.find_available_hotels_by_city_id(
+        city_id=city_id,
+        check_in=check_in,
+        check_out=check_out,
+        price_starts_at=price_starts_at,
+        price_ends_at=price_ends_at
+    )
     print("Available Hotels :", hotels)
     search_req.pop('check_in')
     search_req.pop('check_out')
     search_req.pop('number_of_adults')
     search_req.pop('number_of_children')
+    # Iterate over amenities
     for hotel in hotels:
         for key, value in search_req.items():
             if value:
