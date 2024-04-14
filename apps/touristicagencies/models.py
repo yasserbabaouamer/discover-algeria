@@ -1,6 +1,6 @@
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import Q, Func, F, BigIntegerField, FloatField, Value, CheckConstraint, Count, Avg
+from django.db.models import Q, Func, F, BigIntegerField, FloatField, Value, CheckConstraint, Count, Avg, Case, When
 from django.utils.dates import WEEKDAYS
 
 from apps.users.models import User
@@ -19,8 +19,12 @@ class TouristicAgencyManager(models.Manager):
 
     def find_by_keyword(self, keyword: str):
         return self.annotate(
-            name_ratio=LevenshteinRatio(F('name'), Value(keyword))
-        ).filter(name_ratio__gt=0.1).order_by('-name_ratio').all()
+            name_ratio=Case(
+                When(name__icontains=keyword, then=1),
+                default=LevenshteinRatio(F('name'), Value(keyword)),
+                output_field=FloatField(),
+            )
+        ).filter(name_ratio__gt=0.3).order_by('-name_ratio').all()
 
 
 class TouristicAgency(models.Model):
@@ -56,8 +60,12 @@ class TourManager(models.Manager):
 
     def find_by_keyword(self, keyword: str):
         return self.annotate(
-            title_ratio=LevenshteinRatio(Value(keyword), F('title'))
-        ).filter(title_ratio__gt=0.1).order_by('-title_ratio').all()
+            title_ratio=Case(
+                When(title__icontains=keyword, then=1),
+                default=LevenshteinRatio(F('title'), Value(keyword)),
+                output_field=FloatField(),
+            )
+        ).filter(title_ratio__gt=0.3).order_by('-title_ratio').all()
 
     def find_top_tours_by_city_id(self, city_id: int):
         return self.annotate(
@@ -66,6 +74,17 @@ class TourManager(models.Manager):
         ).filter(
             city_id=city_id,
         )
+
+    def find_available_tours_by_city_id(self, city_id, days: dict):
+        (self.filter(
+            Q(city_id=city_id) &
+            Q(start_day__in=days.keys(), end_day__in=days.keys()) &
+            Q(scheduled_tours__tour_date__in=days.values(),
+              scheduled_tours__tour_status__ne=ScheduledTourStatus.CANCELLED.value),
+        ).annotate(
+            number_of_reviews=Count('scheduled_tours__registrations__review'),
+            avg_ratings=Avg('scheduled_tours__registrations__review__rating')
+        ).all())
 
 
 class PeriodicTour(models.Model):

@@ -42,3 +42,25 @@ class RoomTypeConverter:
 
     def to_dtos_list(self, room_types: List[RoomType]) -> List[RoomTypeDTO]:
         return [self.to_dto(room_type) for room_type in room_types]
+
+
+class AmenityParamDtoConverter:
+    def to_dto(self, amenity: Amenity) -> AmenityParamDto:
+        return AmenityParamDto(
+            amenity.name, amenity.name.lower().replace(' ', '_')
+        )
+
+    def to_dtos_list(self, amenities):
+        return [self.to_dto(amenity) for amenity in amenities]
+
+
+class AmenityCategoryDtoConverter:
+    converter = AmenityParamDtoConverter()
+
+    def to_dto(self, category: AmenityCategory) -> AmenityCategoryDto:
+        return AmenityCategoryDto(
+            category.name, self.converter.to_dtos_list(category.amenities.all())
+        )
+
+    def to_dtos_list(self, categories) -> List[AmenityCategoryDto]:
+        return [self.to_dto(c) for c in categories]

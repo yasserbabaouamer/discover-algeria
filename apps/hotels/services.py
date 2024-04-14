@@ -126,3 +126,8 @@ def filter_city_hotels(city_id, search_req: dict):
 
     converter = HotelDetailsDtoConverter()
     return converter.to_dtos_list(hotels)
+
+
+def find_hotel_amenities():
+    converter = AmenityCategoryDtoConverter()
+    return converter.to_dtos_list(AmenityCategory.objects.all())

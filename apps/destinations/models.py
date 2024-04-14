@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q, FloatField, Func, F, Value, Count
+from django.db.models import Q, FloatField, Func, F, Value, Count, Case, When
 from rest_framework.exceptions import NotFound
 
 
@@ -32,9 +32,13 @@ class CityManager(models.Manager):
 
     def find_by_keyword(self, keyword: str):
         return self.annotate(
-            name_ratio=LevenshteinRatio(F('name'), Value(keyword))
+            name_ratio=Case(
+                When(name__icontains=keyword, then=1),
+                default=LevenshteinRatio(F('name'), Value(keyword)),
+                output_field=FloatField(),
+            )
         ).filter(
-            name_ratio__gt=0.1
+            name_ratio__gt=0.3
         ).order_by('-name_ratio').all()
 
     def find_by_id(self, _id: int):

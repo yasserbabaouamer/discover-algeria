@@ -52,3 +52,15 @@ class HotelDetailsDTO:
     business_email: str
     contact_number: str
     amenities: typing.List[AmenityDTO]
+
+
+@dataclass
+class AmenityParamDto:
+    name: str
+    param: str
+
+
+@dataclass
+class AmenityCategoryDto:
+    name: str
+    amenities: List[AmenityParamDto]

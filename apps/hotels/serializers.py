@@ -1,14 +1,9 @@
-import datetime
-from datetime import timedelta
-
 from django.core.validators import MinValueValidator, RegexValidator
-from django.utils import timezone
 from rest_framework import serializers as rest_serializers
-from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework_dataclasses.serializers import DataclassSerializer
 
-from apps.hotels.dtos import HotelDetailsDTO, ReviewDTO, RoomTypeDTO
-from apps.hotels.models import Hotel, HotelImage, RoomType, GuestReview, Reservation, Amenity, AmenityCategory, BedType
+from .dtos import *
+from .models import Hotel, HotelImage, RoomType, Reservation, Amenity, AmenityCategory, BedType
 
 
 class HotelImageSerializer(rest_serializers.ModelSerializer):
@@ -148,3 +143,16 @@ class FilterRequestSerializer(rest_serializers.Serializer):
             raise rest_serializers.ValidationError({'detail': "Provide both range values or go to play away."})
 
         return data
+
+
+class AmenityParamDtoSerializer(DataclassSerializer):
+    class Meta:
+        dataclass = AmenityParamDto
+
+
+class AmenityCategoryDtoSerializer(DataclassSerializer):
+    amenities = AmenityParamDtoSerializer(many=True)
+
+    class Meta:
+        dataclass = AmenityCategoryDto
+        fields = ['name', 'amenities']

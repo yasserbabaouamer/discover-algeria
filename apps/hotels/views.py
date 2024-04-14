@@ -112,11 +112,13 @@ class SearchHotelsByCity(APIView):
         raise ValidationError(request.errors)
 
 
-
-class GetFilters(ListAPIView):
+class HotelAmenities(APIView):
     authentication_classes = []
     permission_classes = []
 
+    def get(self, request):
+        response = serializers.AmenityCategoryDtoSerializer(services.find_hotel_amenities(), many=True)
+        return Response(data=response.data, status=status.HTTP_200_OK)
 
 
 class FillDb(APIView):

@@ -3,7 +3,8 @@ from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import CheckConstraint, Q, Index, Count, Avg, Min, QuerySet, Func, FloatField, F, Value
+from django.db.models import CheckConstraint, Q, Index, Count, Avg, Min, QuerySet, Func, FloatField, F, Value, Case, \
+    When, BooleanField
 from rest_framework.exceptions import NotFound, ValidationError
 
 from . import managers
@@ -60,11 +61,16 @@ class HotelManager(models.Manager):
             raise NotFound({'detail': 'No Such Hotel with this id'})
 
     def find_by_keyword(self, keyword):
-        return self.annotate(
-            name_ratio=LevenshteinRatio(F('name'), Value(keyword))
+        result = self.annotate(
+            name_ratio=Case(
+                When(name__icontains=keyword, then=1),
+                default=LevenshteinRatio(F('name'), Value(keyword)),
+                output_field=FloatField(),
+            )
         ).filter(
-            name_ratio__gt=0.1
-        ).order_by('-name_ratio').all()
+            Q(name_ratio__gt=0.3)
+        ).order_by('-name_ratio')
+        return result.all()
 
     def find_available_hotels_by_city_id(self, city_id, check_in: datetime, check_out: datetime,
                                          price_starts_at: int, price_ends_at: int):
@@ -85,8 +91,8 @@ class HotelManager(models.Manager):
 
     def has_amenity(self, hotel_id, amenity: str) -> bool:
         return self.filter(
-            id=hotel_id,
-            room_types__amenities__name=amenity
+            Q(id=hotel_id) &
+            Q(room_types__amenities__name=amenity) | Q(amenities__name=amenity)
         ).exists()
 
 
