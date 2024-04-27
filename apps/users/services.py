@@ -77,25 +77,22 @@ def generate_and_send_confirmation_code(user: User):
 
 
 def activate_user(confirmation_request: dict):
-    try:
-        user = User.objects.find_by_email(confirmation_request['email'])
-        if (check_password(str(confirmation_request['confirmation_code']), user.activation.code)
-                and not user.activation.is_expired()
-                and not user.activation.is_used):
-            with transaction.atomic():
-                user.is_active = True
-                user.save()
-                user.activation.is_used = True
-                user.activation.save()
-                refresh = RefreshToken.for_user(user)
-                return {
-                    'access': refresh.access_token,
-                    'refresh': refresh.token
-                }
-        else:
-            raise ValidationError({'detail': 'Invalid confirmation code'})
-    except ObjectDoesNotExist as e:
-        raise ValidationError({'detail': e})
+    user = User.objects.find_by_email(confirmation_request['email'])
+    if (check_password(str(confirmation_request['confirmation_code']), user.activation.code)
+            and not user.activation.is_expired()
+            and not user.activation.is_used):
+        with transaction.atomic():
+            user.is_active = True
+            user.save()
+            user.activation.is_used = True
+            user.activation.save()
+            refresh = RefreshToken.for_user(user)
+            return {
+                'access': refresh.access_token,
+                'refresh': refresh.token
+            }
+    else:
+        raise ValidationError({'detail': 'Invalid confirmation code'})
 
 
 def resend_confirmation_code(request: dict):

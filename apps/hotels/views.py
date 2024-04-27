@@ -1,15 +1,18 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from jsonschema.exceptions import ValidationError
 from rest_framework import status
+from rest_framework.decorators import parser_classes
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import ListAPIView
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .permissions import IsOwner, IsGuest
 from . import services, serializers
 
 
-class GetMostVisitedHotelsView(APIView):
+class GetTopHotelsView(APIView):
     authentication_classes = []
     permission_classes = []
 
@@ -19,12 +22,13 @@ class GetMostVisitedHotelsView(APIView):
         responses=serializers.HotelSerializer,
     )
     def get(self, request):
-        hotels = services.get_most_visited_hotels()
+        hotels = services.find_top_hotels()
+        print('Top hotels are :', hotels)
         hotels_serializer = serializers.HotelSerializer(hotels, many=True)
         return Response(data=hotels_serializer.data, status=status.HTTP_200_OK)
 
 
-class HotelView(APIView):
+class GetHotelDetailsView(APIView):
     authentication_classes = []
     permission_classes = []
 
@@ -71,6 +75,8 @@ class GetHotelRoomTypes(APIView):
 
 
 class RoomReservationView(APIView):
+    permission_classes = [IsGuest]
+
     @extend_schema(
         tags=['Hotels'],
         summary='Reserve a hotel room',
@@ -121,12 +127,31 @@ class HotelAmenities(APIView):
         return Response(data=response.data, status=status.HTTP_200_OK)
 
 
-class FillDb(APIView):
-    authentication_classes = []
-    permission_classes = []
+# Owner Dashboard endpoints
 
-    @extend_schema(
-        tags=['Testing']
-    )
-    def get(self, request):
-        return Response(status=status.HTTP_200_OK)
+class GetHotelsStatistics(APIView):
+    permission_classes = [IsOwner]
+
+    def get(self, request, *args, **kwargs):
+        pass
+
+
+class OwnerHotelsView(APIView):
+    permission_classes = [IsOwner]
+    pagination_class = PageNumberPagination
+    parser_classes = [MultiPartParser]
+
+    def get(self, request, *args, **kwargs):
+        page = kwargs.pop('page', 1)
+        limit = kwargs.pop('limit', 10)
+        hotels = services.find_hotels_by_owner(request.user.owner)
+        response = serializers.MyHotelItemSerializer(hotels, many=True)
+        return Response(data=response.data, status=status.HTTP_200_OK)
+
+
+    def post(self, _request, *args, **kwargs):
+        create_request = serializers.CreateHotelRequestSerializer(data=self.request.data)
+        if create_request.is_valid():
+            services.create_new_hotel(self.request.user.owner, create_request.validated_data)
+            return Response({'detail': 'Your hotel has been created successfully'}, status=status.HTTP_201_CREATED)
+        raise ValidationError(detail=create_request.errors)

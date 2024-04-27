@@ -3,11 +3,15 @@ from datetime import datetime
 from django.db import models
 from django.db.models import Q, QuerySet
 
+from apps.hotels.enums import ReservationStatus
+
 
 class RoomManager(models.Manager):
-    def get_available_rooms_by_room_type(self, room_type_id: int, check_in: datetime, check_out: datetime) -> QuerySet:
+    def find_available_rooms_by_room_type(self, room_type_id: int, check_in: datetime, check_out: datetime) -> QuerySet:
         reserved_rooms = self.filter(
-            Q(room_type_id=room_type_id)
+            Q(room_type_id=room_type_id) &
+            Q(assignments__reserved_room_type__reservation__status=ReservationStatus.CONFIRMED.value) |
+            Q(assignments__reserved_room_type__reservation__status=ReservationStatus.ACTIVE.value)
             & (
                     Q(assignments__reserved_room_type__reservation__check_in__gt=check_in) &
                     Q(assignments__reserved_room_type__reservation__check_in__lt=check_out)
@@ -17,7 +21,6 @@ class RoomManager(models.Manager):
                     |
                     Q(assignments__reserved_room_type__reservation__check_out__gt=check_in) &
                     Q(assignments__reserved_room_type__reservation__check_out__lt=check_out)
-
             )
         ).all()
         reserved_rooms_ids = reserved_rooms.values_list('id', flat=True)

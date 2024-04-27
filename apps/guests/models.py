@@ -1,3 +1,4 @@
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import CheckConstraint, Q
 
@@ -17,8 +18,9 @@ class Guest(models.Model):
     first_name = models.CharField(max_length=255, null=True)
     last_name = models.CharField(max_length=255, null=True)
     birthday = models.DateField(null=True)
-    phone = models.CharField(max_length=20, null=True)
-    country = models.ForeignKey(Country, related_name='guests', on_delete=models.CASCADE, null=True)
+    country_code = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
+    phone = models.PositiveIntegerField(validators=[RegexValidator(regex="^\d{7,15}$")], null=True)
+    country = models.ForeignKey(Country, related_name='guests', on_delete=models.SET_NULL, null=True)
     profile_pic = models.ImageField(null=True)
     preferred_currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.DZD.value)
     created_at = models.DateTimeField(auto_now_add=True, null=True)

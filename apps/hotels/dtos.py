@@ -64,3 +64,20 @@ class AmenityParamDto:
 class AmenityCategoryDto:
     name: str
     amenities: List[AmenityParamDto]
+
+
+# @dataclass
+# class HotelItemDto:
+#     id: int
+#     name: str
+#     stars: int
+#     address: str
+#     website: str
+#     business_email: str
+#     nb_rooms: int
+#     nb_occupied_rooms: int
+#     nb_reservations: int
+#     nb_check_ins: int
+#     nb_cancellations: int
+#     revenue: int
+#     facilities: List[AmenityDTO]

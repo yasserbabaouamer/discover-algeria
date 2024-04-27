@@ -2,7 +2,7 @@ from .dtos import *
 from .models import Hotel, GuestReview, RoomType, Room
 
 
-class ReviewToDTOConverter:
+class ReviewDtoConverter:
 
     def to_dto(self, review: GuestReview) -> ReviewDTO:
         return ReviewDTO(
@@ -14,7 +14,7 @@ class ReviewToDTOConverter:
 
 
 class HotelDetailsDtoConverter:
-    review_converter = ReviewToDTOConverter()
+    review_converter = ReviewDtoConverter()
 
     def to_dto(self, hotel: Hotel) -> HotelDetailsDTO:
         return HotelDetailsDTO(
@@ -35,7 +35,7 @@ class RoomTypeConverter:
             room_type.id, room_type.name, room_type.size, room_type.nb_beds, room_type.main_bed_type,
             room_type.price_per_night,
             room_type.cover_img.path,
-            Room.objects.get_available_rooms_by_room_type(room_type.id, check_in, check_out).count()
+            Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out).count()
             if check_in is not None and check_out is not None else None,
             RoomType.objects.get_categories_and_amenities(room_type.id)
         )
@@ -64,3 +64,17 @@ class AmenityCategoryDtoConverter:
 
     def to_dtos_list(self, categories) -> List[AmenityCategoryDto]:
         return [self.to_dto(c) for c in categories]
+
+
+# class HotelItemDtoConverter:
+#     amenity_converter = Amenity
+#
+#     def to_dto(self, hotel: Hotel) -> HotelItemDto:
+#         return HotelItemDto(
+#             hotel.id, hotel.name, hotel.stars, f"{hotel.address}, {hotel.city.name}, {hotel.city.country.name}",
+#             hotel.website_url, hotel.business_email, hotel.nb_rooms, hotel.nb_occupied_rooms, hotel.nb_reservations,
+#             hotel.nb_check_ins, hotel.nb_cancellations, hotel.revenue, hotel.amenities.all()
+#         )
+#
+#     def to_dtos_list(self, hotels) -> List[HotelItemDto]:
+#         return [self.to_dto(hotel) for hotel in hotels]

@@ -40,7 +40,7 @@ def generate_tokens_for_guest(user: User):
     return tokens
 
 
-def setup_guest_profile_for_existing_user(user: User, profile_request: dict):
+def setup_guest_profile(user: User, profile_request: dict):
     guest, created = Guest.objects.get_or_create(
         user=user, defaults={
             'first_name': profile_request['first_name'],

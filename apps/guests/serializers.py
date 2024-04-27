@@ -10,17 +10,6 @@ class GuestLoginRequestSerializer(rest_serializers.Serializer):
     password = rest_serializers.CharField(max_length=255, required=True)
 
 
-class GuestSignupRequestSerializer(rest_serializers.Serializer):
-    email = rest_serializers.CharField(max_length=255, required=True)
-    password = rest_serializers.CharField(max_length=255, required=True)
-    confirm_password = rest_serializers.CharField(max_length=255, required=True)
-
-    def validate(self, attrs):
-        if attrs['password'] != attrs['confirm_password']:
-            raise ValidationError(detail={'detail': 'passwords are not identical'})
-        return attrs
-
-
 class QuickProfileRequestSerializer(rest_serializers.Serializer):
     first_name = rest_serializers.CharField(max_length=255)
     last_name = rest_serializers.CharField(max_length=255)
@@ -37,3 +26,5 @@ class TokensSerializer(rest_serializers.Serializer):
     access = rest_serializers.CharField(max_length=255)
     refresh = rest_serializers.CharField(max_length=255)
     has_guest_acc = rest_serializers.BooleanField()
+
+

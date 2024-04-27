@@ -1,5 +1,6 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -32,6 +33,25 @@ class IsEmailExistView(APIView):
         raise ValidationError(email_request.errors)
 
 
+class SignupView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        tags=['Guests'],
+        request=SignupRequestSerializer,
+        responses={201: OpenApiResponse(description='Account Created , Confirmation code send to guest email')},
+        summary='Signup for guests'
+    )
+    def post(self, request: Request):
+        signup_request = SignupRequestSerializer(data=request.data)
+        if signup_request.is_valid():
+            services.register_new_user(signup_request.validated_data)
+            return Response(data={'detail': 'Confirmation code sent successfully'}, status=status.HTTP_201_CREATED)
+        else:
+            raise ValidationError(signup_request.errors)
+
+
 class ConfirmationView(APIView):
     authentication_classes = []
     permission_classes = []
@@ -39,7 +59,7 @@ class ConfirmationView(APIView):
     @extend_schema(
         tags=['Authentication'],
         summary='Account confirmation',
-        description='Post the confirmation code with the provided Token',
+        description='Post the confirmation code with the user email',
         request=serializers.ConfirmationCodeRequestSerializer,
         responses={200: TokensSerializer}
     )

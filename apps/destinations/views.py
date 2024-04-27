@@ -39,3 +39,10 @@ class GetCityDetailsView(APIView):
             return Response(data=response.data, status=status.HTTP_200_OK)
         except KeyError as e:
             raise ValidationError({'detail': 'Provide a city id'})
+
+
+class CountryCodeView(ListAPIView):
+    authentication_classes = []
+    permission_classes = []
+    queryset = services.find_all_countries_codes()
+    serializer_class = serializers.CountryCodeSerializer

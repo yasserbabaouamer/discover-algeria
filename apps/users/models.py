@@ -53,6 +53,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         except ObjectDoesNotExist as e:
             return False
 
+    def has_owner_account(self):
+        try:
+            return self.owner is not None
+        except ObjectDoesNotExist as e:
+            return False
+
     class Meta:
         db_table = 'users'
         indexes = [

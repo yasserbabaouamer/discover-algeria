@@ -21,7 +21,7 @@ class CountryManger(models.Manager):
 class Country(models.Model):
     name = models.CharField(max_length=255)
     flag = models.ImageField(upload_to='destinations/', null=True)
-    country_code = models.PositiveIntegerField(null=True)
+    country_code = models.CharField(max_length=10, null=True)
     objects = CountryManger()
 
     class Meta:
@@ -49,8 +49,8 @@ class CityManager(models.Manager):
 
     def find_top_cities(self):
         return self.annotate(
-            reservations_count=Count('hotels__room_types__reservations')
-        ).order_by('-reservations_count').all()
+            reservations_count=Count('hotels__reservations')
+        ).order_by('-reservations_count').all()[:5]
 
 
 class City(models.Model):
