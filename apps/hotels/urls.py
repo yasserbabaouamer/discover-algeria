@@ -12,5 +12,10 @@ urlpatterns = [
     path(APP_URL + 'reserve/', RoomReservationView.as_view()),
     path('cities/<int:city_id>/hotels', SearchHotelsByCity.as_view()),
     path(APP_URL + 'amenities/', HotelAmenities.as_view()),
-    path(APP_URL + 'owner/', OwnerHotelsView.as_view()),
+    path('owner/' + APP_URL, ListCreateOwnerHotelView.as_view()),
+    path('owner/' + APP_URL + '<int:hotel_id>/', ManageOwnerHotelDetailsView.as_view()),
+    path('owner/' + APP_URL + '<int:hotel_id>/rooms/', ListCreateHotelRoomType.as_view()),
+    path('owner/' + APP_URL + 'rooms/<int:room_type_id>', ManageHotelRoomType.as_view()),
+    path('owner/' + APP_URL + '<int:hotel_id>/reservations', GetOwnerReservationsView.as_view()),
+    path('owner/reservations/<int:reservation_id>', ManageOwnerReservationView.as_view())
 ]

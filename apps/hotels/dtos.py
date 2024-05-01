@@ -3,7 +3,7 @@ import typing
 from dataclasses import dataclass
 from typing import List
 
-from apps.hotels.models import Amenity, BedType, AmenityCategory
+from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview
 
 
 @dataclass
@@ -65,6 +65,34 @@ class AmenityCategoryDto:
     name: str
     amenities: List[AmenityParamDto]
 
+
+@dataclass
+class HotelDashboardReservationDto:
+    completed: int
+    cancelled: int
+    income: int
+
+
+@dataclass
+class HotelDashboardRoomTypeDto:
+    id: int
+    rooms_count: int
+    occupied_rooms_count: int
+    revenue_month: int
+
+
+@dataclass
+class HotelDashboardInfoDto:
+    id: int
+    name: str
+    stars: int
+    address: str
+    longitude: float
+    latitude: float
+    rating_avg: float
+    reservations: HotelDashboardReservationDto
+    room_types: List[HotelDashboardRoomTypeDto]
+    reviews: List[GuestReview]
 
 # @dataclass
 # class HotelItemDto:

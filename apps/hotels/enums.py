@@ -4,8 +4,8 @@ from django.db import models
 class ReservationStatus(models.TextChoices):
     CONFIRMED = 'Confirmed'
     ACTIVE = 'Active'
-    CANCELLED_BY_OWNER = 'Cancelled_By_Owner'
-    CANCELLED_BY_GUEST = 'Cancelled_By_Guest'
+    CANCELLED_BY_OWNER = 'Cancelled By Owner'
+    CANCELLED_BY_GUEST = 'Cancelled By Guest'
     COMPLETED = 'Completed'
     DELETED_BY_ADMIN = 'Deleted_By_Admin'
 
@@ -21,7 +21,45 @@ class ParkingType(models.TextChoices):
     PUBLIC = 'Public'
 
 
-class Prepayment(models.TextChoices):
+class PrepaymentPolicy(models.TextChoices):
     REQUIRED = 'Required'
     NOT_REQUIRED = 'Not Required'
     DEPENDS = 'Depends on Selected Room Type'
+
+
+class HotelStatus(models.TextChoices):
+    VISIBLE = 'Visible'
+    HIDDEN = 'Hidden'
+    DELETED_BY_OWNER = 'Deleted By Owner'
+    DELETED_BY_ADMIN = 'Deleted By Admin'
+
+
+class SortReservations(models.TextChoices):
+    NAME = 'name'
+    CHECK_IN = 'check_in'
+    CHECK_OUT = 'check_out'
+    PRICE = 'price'
+    COMMISSION = 'commission'
+    STATUS = 'status'
+    BOOKED_AT = 'booked_at'
+
+
+class RoomTypeEnum(models.TextChoices):
+    SINGLE = "Single"
+    DOUBLE = "Double"
+    TWIN = "Twin"
+    TWIN_DOUBLE = "Twin/Double"
+    TRIPLE = "Triple"
+    QUADRUPLE = "Quadruple"
+    SUITE = "Suite"
+    FAMILY = "Family"
+    STUDIO = "Studio"
+    APARTMENT = "Apartment"
+    DORMITORY_ROOM = "Dormitory Room"
+    BED_IN_DORMITORY = "Bed in Dormitory"
+
+
+class RoomTypeStatus(models.TextChoices):
+    VISIBLE = 'Visible'
+    HIDDEN = 'Hidden'
+    DELETED_BY_OWNER = 'Deleted By Owner'

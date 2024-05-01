@@ -8,7 +8,7 @@ class BlogManager(models.Manager):
 
 class Blog(models.Model):
     title = models.CharField(max_length=255)
-    cover_img = models.ImageField()
+    cover_img = models.ImageField(upload_to='blogs/')
     content = models.TextField()
     objects = BlogManager()
 

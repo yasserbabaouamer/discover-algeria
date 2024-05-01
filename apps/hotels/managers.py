@@ -1,10 +1,11 @@
 from datetime import datetime
 
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q, QuerySet, OuterRef, Count
 
 from apps.hotels.enums import ReservationStatus
-
+from apps.owners.models import Owner
+from .models import *
 
 class RoomManager(models.Manager):
     def find_available_rooms_by_room_type(self, room_type_id: int, check_in: datetime, check_out: datetime) -> QuerySet:
@@ -26,3 +27,12 @@ class RoomManager(models.Manager):
         reserved_rooms_ids = reserved_rooms.values_list('id', flat=True)
         available_rooms = self.filter(room_type_id=room_type_id).exclude(id__in=reserved_rooms_ids).all()
         return available_rooms
+
+    def get_room_type_rooms_subquery(self):
+        return self.filter(
+            room_type_id=OuterRef('pk')
+        ).annotate(
+            rooms_count=Count('id')
+        )
+
+

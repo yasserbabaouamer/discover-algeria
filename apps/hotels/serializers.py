@@ -3,8 +3,8 @@ from rest_framework import serializers
 from rest_framework_dataclasses.serializers import DataclassSerializer
 
 from .dtos import *
-from .enums import Prepayment
-from .models import Hotel, HotelImage, RoomType, Reservation, Amenity, AmenityCategory, BedType
+from .enums import PrepaymentPolicy, ParkingType, CancellationPolicy, SortReservations, RoomTypeEnum, ReservationStatus
+from .models import Hotel, HotelImage, RoomType, Reservation, Amenity, AmenityCategory, BedType, GuestReview
 
 
 class HotelImageSerializer(serializers.ModelSerializer):
@@ -18,7 +18,7 @@ class HotelSerializer(serializers.ModelSerializer):
     rating = serializers.FloatField()
     starts_at = serializers.IntegerField()
     average = serializers.FloatField()
-    images = HotelImageSerializer(many=True)
+    cover_img = HotelImageSerializer(many=True)
 
     class Meta:
         model = Hotel
@@ -179,7 +179,7 @@ class MyHotelItemSerializer(serializers.ModelSerializer):
                   'reservations_count', 'check_ins_count', 'cancellations_count', 'occupied_rooms_count']
 
 
-class CreateHotelRequestSerializer(serializers.Serializer):
+class HotelInfoSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
     address = serializers.CharField(max_length=255)
     city_id = serializers.IntegerField()
@@ -189,16 +189,155 @@ class CreateHotelRequestSerializer(serializers.Serializer):
     website = serializers.URLField(default=None)
     business_email = serializers.CharField(default=None)
     country_code_id = serializers.IntegerField()
-    phone = serializers.IntegerField()
+    contact_number = serializers.IntegerField()
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
     facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+
+
+class HotelRulesSerializer(serializers.Serializer):
     check_in_from = serializers.TimeField()
     check_in_until = serializers.TimeField()
     check_out_from = serializers.TimeField()
     check_out_until = serializers.TimeField()
-    prepayment_policy = serializers.ChoiceField(choices=Prepayment.choices)
+    cancellation_policy = serializers.ChoiceField(choices=CancellationPolicy.choices)
+    days_before_cancellation = serializers.IntegerField(default=0, validators=[MinValueValidator(1)])
+    prepayment_policy = serializers.ChoiceField(choices=PrepaymentPolicy.choices)
+
+    def validate(self, data):
+        if data.get('check_in_until') < data.get('check_in_from'):
+            raise serializers.ValidationError({'detail': 'check_in_until must be after check_in_from'})
+        if data.get('check_out_until') < data.get('check_out_from'):
+            raise serializers.ValidationError({'detail': 'check_out_until must be after check_out_from'})
+        return data
+
+
+class HotelParkingSituationSerializer(serializers.Serializer):
     parking_available = serializers.BooleanField()
-    reservation_needed = serializers.BooleanField()
+    reservation_needed = serializers.BooleanField(required=False)
+    parking_type = serializers.ChoiceField(choices=ParkingType.choices, required=False)
+
+    def validate(self, data):
+        print("parking data: ", data)
+        parking_available = data.get('parking_available')
+        reservation_needed = data.pop('reservation_needed', None)
+        parking_type = data.pop('parking_type', None)
+        print("parking type bro is:", parking_type, " , reservation_needed:", reservation_needed)
+        if parking_available and reservation_needed is None or parking_type is None:
+            raise serializers.ValidationError(
+                {'detail': "If you set the parking to be available, then provide the other information"
+                           " about it and don't be mad"})
+        return data
+
+
+class CreateHotelRequestSerializer(serializers.Serializer):
+    hotel_info = HotelInfoSerializer()
+    hotel_rules = HotelRulesSerializer()
+    parking = HotelParkingSituationSerializer()
+
+
+class CreateHotelFormSerializer(serializers.Serializer):
+    body = serializers.JSONField()
     cover_img = serializers.ImageField()
     hotel_images = serializers.ListField(child=serializers.ImageField(), allow_empty=False)
+
+    def validate(self, data):
+        create_hotel_req = CreateHotelRequestSerializer(data=data.get('body'))
+        if not create_hotel_req.is_valid():
+            raise serializers.ValidationError(detail=create_hotel_req.errors)
+        return data
+
+
+class FilterReservationsParamsSerializer(serializers.Serializer):
+    check_in = serializers.DateField()
+    check_out = serializers.DateField()
+    room_type = serializers.ChoiceField(choices=RoomTypeEnum.choices, default=None)
+    status = serializers.ChoiceField(choices=ReservationStatus.choices, default=None)
+    sort = serializers.ChoiceField(choices=SortReservations.choices, default=SortReservations.CHECK_IN.value)
+
+
+class ReservationItemSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    def get_full_name(self, reservation: Reservation):
+        return f"{reservation.first_name} {reservation.last_name}"
+
+    class Meta:
+        model = Reservation
+        fields = [
+            'full_name', 'check_in', 'check_out', 'total_price', 'commission', 'status'
+        ]
+
+
+class EssentialHotelInfoSerializer(serializers.ModelSerializer):
+    check_ins = serializers.IntegerField()
+    check_outs = serializers.IntegerField()
+
+    class Meta:
+        model = Hotel
+        fields = ['id', 'name', 'check_ins', 'check_outs']
+
+
+class EssentialReviewItemSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    profile_pic = serializers.SerializerMethodField()
+
+    def get_username(self, review: GuestReview):
+        return f"{review.reservation.first_name} {review.reservation.last_name}"
+
+    def get_profile_pic(self, review: GuestReview):
+        return review.reservation.guest.profile_pic.url
+
+    class Meta:
+        model = GuestReview
+        fields = ['id', 'username', 'profile_pic', 'title', 'rating', 'created_at']
+
+
+class EssentialReservationInfoSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    profile_pic = serializers.SerializerMethodField()
+
+    def get_username(self, reservation: Reservation):
+        return f"{reservation.first_name} {reservation.last_name}"
+
+    def get_profile_pic(self, reservation: Reservation):
+        return reservation.guest.profile_pic
+
+    class Meta:
+        model = Reservation
+        fields = ['id', 'username', 'profile_pic', 'status', 'total_price']
+
+
+class DailyIncomeSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    income = serializers.IntegerField()
+
+
+class OwnerDashboardSerializer(serializers.Serializer):
+    hotels = EssentialHotelInfoSerializer(many=True)
+    reviews = EssentialReviewItemSerializer(many=True)
+    reservations = EssentialReservationInfoSerializer(many=True)
+    daily_incomes = DailyIncomeSerializer(many=True)
+
+
+# class HotelDashboardSerializer(serializers.Serializer):
+#     reviews = EssentialReviewItemSerializer(many=True)
+#     reservations = HotelDashboardReservationSerializer(many=True)
+#     pass
+
+class HotelDashboardInfoSerializer(DataclassSerializer):
+    reviews = EssentialReviewItemSerializer(many=True)
+
+    class Meta:
+        dataclass = HotelDashboardInfoDto
+
+
+class RoomTypeItemSerializer(serializers.ModelSerializer):
+    categories = AmenityCategorySerializer(many=True)
+    bed_types = BedTypeSerializer(many=True)
+    rooms_count = serializers.IntegerField()
+    occupied_rooms_count = serializers.IntegerField()
+
+    class Meta:
+        model = RoomType
+        fields = ['id', 'name', 'rooms_count', 'occupied_rooms_count', 'bed_types', 'categories']

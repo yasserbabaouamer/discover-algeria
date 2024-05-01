@@ -4,11 +4,13 @@ from datetime import time
 
 from django.db import transaction, connection
 from django.db.models import QuerySet
-from django.shortcuts import get_list_or_404
+from django.shortcuts import get_list_or_404, get_object_or_404
 from rest_framework.exceptions import ValidationError
 
-from apps.hotels.models import Hotel, Reservation, ReservedRoomType, RoomAssignment, Language
+from apps.hotels.models import Hotel, Reservation, ReservedRoomType, RoomAssignment, Language, HotelImage, HotelRules, \
+    ParkingSituation
 from .converters import *
+from .enums import HotelStatus, ReservationStatus
 from .serializers import FilterRequestSerializer
 from ..destinations.models import Country
 from ..owners.models import Owner
@@ -143,13 +145,60 @@ def find_hotels_by_owner(owner: Owner):
 
 
 def create_new_hotel(owner: Owner, data: dict):
-    staff_languages = get_list_or_404(Language, id__in=data.get('staff_languages'))
-    amenities = get_list_or_404(Amenity, id__in=data.get('facilities'))
+    hotel_data: dict = data.get('body')
+    hotel_info = hotel_data.get('hotel_info')
+    hotel_rules = hotel_data.get('hotel_rules')
+    parking = hotel_data.get('parking')
+    parking_available = parking.pop('parking_available')
+    staff_languages = get_list_or_404(Language, id__in=hotel_info.pop('staff_languages'))
+    amenities = get_list_or_404(Amenity, id__in=hotel_info.pop('facilities'))
     with transaction.atomic():
         hotel = Hotel.objects.create(
             owner=owner,
-            **data
+            **hotel_info,
+            cover_img=data['cover_img'],
+            parking_available=parking_available
         )
+        for image_url in data['hotel_images']:
+            HotelImage.objects.create(hotel=hotel, img=image_url)
         hotel.staff_languages.add(*staff_languages)
         hotel.amenities.add(*amenities)
         hotel.save()
+        _hotel_rules = HotelRules.objects.create(hotel=hotel, **hotel_rules)
+        if parking_available:
+            _parking_situation = ParkingSituation.objects.create(hotel=hotel, **parking)
+
+
+def find_hotel_by_id(hotel_id) -> Hotel:
+    return get_object_or_404(Hotel, pk=hotel_id)
+
+
+def delete_owner_hotel(hotel_id):
+    hotel = Hotel.objects.find_by_id(hotel_id)
+    hotel.status = HotelStatus.DELETED_BY_OWNER.value
+    hotel.save()
+
+
+def find_reservations_by_hotel_id(hotel_id: int, filters: dict):
+    hotel = get_object_or_404(Hotel, id=hotel_id)
+    return Reservation.objects.find_reservations_by_hotel_id(hotel, filters)
+
+
+def find_hotel_by_reservation_id(reservation_id):
+    return get_object_or_404(Reservation, pk=reservation_id).hotel
+
+
+def cancel_reservation(reservation_id: int):
+    reservation = get_object_or_404(Reservation, pk=reservation_id)
+    reservation.status = ReservationStatus.CANCELLED_BY_OWNER.value
+    reservation.save()
+
+
+def find_hotel_dashboard_details(hotel_id) -> HotelDashboardInfoDto:
+    converter = HotelDashboardInfoDtoConverter()
+    hotel = Hotel.objects.find_hotel_details_for_dashboard(hotel_id)
+    return converter.to_dto(hotel)
+
+
+def find_room_types_by_hotel_id(hotel_id: int):
+    return RoomType.objects.find_room_types_by_hotel_id(hotel_id)

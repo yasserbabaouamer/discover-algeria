@@ -1,6 +1,8 @@
 from django.contrib.auth.models import Permission
 from rest_framework import permissions
 
+from apps.hotels import services
+
 
 class IsOwner(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -9,7 +11,7 @@ class IsOwner(permissions.BasePermission):
         return False
 
     def has_object_permission(self, request, view, hotel):
-        return request.user == hotel.owner.user
+        return request.user.owner == hotel.owner
 
 
 class IsGuest(permissions.BasePermission):
