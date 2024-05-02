@@ -224,19 +224,27 @@ def update_hotel_by_id(hotel_id, data: dict):
     removed_staff_languages = get_list_or_404(Language, id__in=hotel_info.pop('removed_staff_languages'))
     added_amenities = get_list_or_404(Amenity, id__in=hotel_info.pop('added_facilities'))
     removed_amenities = get_list_or_404(Amenity, id__in=hotel_info.pop('removed_facilities'))
+    removed_images = get_list_or_404(HotelImage, id__in=[])
     with transaction.atomic():
-        hotel = get_object_or_404(Hotel, pk=hotel_id)
+        hotel = Hotel.objects.find_with_rules_and_parking_and_images(hotel_id)
+        print('Hotel attrs :', dir(hotel))
+        # Update hotel information
         for key, value in hotel_info.items():
             setattr(hotel, key, value)
         hotel.parking_available = parking_available
+        hotel.staff_languages.remove(*removed_staff_languages)
+        hotel.staff_languages.add(*added_staff_languages)
+        hotel.amenities.remove(*removed_amenities)
+        hotel.amenities.add(*added_amenities)
+        # Update hotel images
+
+        # Update hotel rules
         for key, value in hotel_rules.items():
             setattr(hotel.rules, key, value)
+        # Update hotel parking situation
         for key, value in parking.items():
             setattr(hotel.parking_situation, key, value)
-        hotel.staff_languages.remove(removed_staff_languages)
-        hotel.staff_languages.add(added_staff_languages)
-        hotel.amenities.remove(removed_amenities)
-        hotel.amenities.add(added_amenities)
+
         hotel.save()
         hotel.rules.save()
         hotel.parking_situation.save()

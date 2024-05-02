@@ -178,6 +178,13 @@ class HotelManager(models.Manager):
                      ))
         ).get(pk=hotel_id)
 
+    def find_with_rules_and_parking_and_images(self, hotel_id):
+        try:
+            return (Hotel.objects.select_related('rules', 'parking_situation')
+                    .prefetch_related('images').get(pk=hotel_id))
+        except ObjectDoesNotExist as e:
+            raise NotFound({'detail': 'No such hotel found for this id'})
+
 
 class Hotel(models.Model):
     id = models.AutoField(primary_key=True)
@@ -247,7 +254,7 @@ class HotelRules(models.Model):
 
 
 class ParkingSituation(models.Model):
-    hotel = models.ForeignKey(Hotel, on_delete=models.SET_NULL, null=True, related_name='parking_situation')
+    hotel = models.OneToOneField(Hotel, on_delete=models.SET_NULL, null=True, related_name='parking_situation')
     reservation_needed = models.BooleanField(default=False)
     parking_type = models.CharField(max_length=25, choices=ParkingType.choices)
 
@@ -277,7 +284,7 @@ class RoomTypeManager(models.Manager):
             raise NotFound({'detail': 'No such room type with this id'})
 
     def get_categories_and_amenities(self, room_type_id):
-        room_type = self.find_by_id( room_type_id)
+        room_type = self.find_by_id(room_type_id)
         # Access the related amenities using the amenities attribute
         amenities = room_type.amenities.all()
         # Retrieve the categories of those amenities and their associated amenities

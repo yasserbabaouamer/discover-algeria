@@ -338,21 +338,14 @@ class RoomTypeItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'rooms_count', 'occupied_rooms_count', 'bed_types', 'categories']
 
 
-class UpdateHotelFormSerializer(serializers.Serializer):
-    body = serializers.JSONField()
-    cover_img = serializers.ImageField(required=False)
-    added_hotel_images = serializers.ListField(child=serializers.ImageField(), allow_empty=True)
-    removed_hotel_images = serializers.ListField(child=serializers.URLField(), allow_empty=True)
-
-
-class UpdateHotelInfoSerializer:
+class UpdateHotelInfoSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
     address = serializers.CharField(max_length=255)
     city_id = serializers.IntegerField()
     stars = serializers.IntegerField(validators=[MaxValueValidator(5), MinValueValidator(1)])
     about = serializers.CharField(max_length=350)
-    added_staff_languages = serializers.ListField(child=serializers.IntegerField())
-    removed_staff_languages = serializers.ListField(child=serializers.IntegerField())
+    added_staff_languages = serializers.ListField(child=serializers.IntegerField(), required=True)
+    removed_staff_languages = serializers.ListField(child=serializers.IntegerField(), required=True)
     website = serializers.URLField(default=None)
     business_email = serializers.CharField(default=None)
     country_code_id = serializers.IntegerField()
@@ -363,5 +356,21 @@ class UpdateHotelInfoSerializer:
     removed_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
 
 
-class UpdateHotelRequestSerializer(CreateHotelRequestSerializer):
+class UpdateHotelRequestSerializer(serializers.Serializer):
     hotel_info = UpdateHotelInfoSerializer()
+    hotel_rules = HotelRulesSerializer()
+    parking = HotelParkingSituationSerializer()
+    removed_hotel_images = serializers.ListField(child=serializers.URLField(), allow_empty=True)
+
+
+class UpdateHotelFormSerializer(serializers.Serializer):
+    body = serializers.JSONField()
+    cover_img = serializers.ImageField(required=False)
+    added_hotel_images = serializers.ListField(child=serializers.ImageField(), allow_empty=True)
+
+    def validate(self, data):
+        update_hotel_req = UpdateHotelRequestSerializer(data=data.get('body'))
+        if not update_hotel_req.is_valid():
+            raise serializers.ValidationError(detail=update_hotel_req.errors)
+        print('validated data of update hotel request :', update_hotel_req.validated_data)
+        return data
