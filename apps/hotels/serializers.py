@@ -179,7 +179,7 @@ class MyHotelItemSerializer(serializers.ModelSerializer):
                   'reservations_count', 'check_ins_count', 'cancellations_count', 'occupied_rooms_count']
 
 
-class HotelInfoSerializer(serializers.Serializer):
+class CreateHotelInfoSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
     address = serializers.CharField(max_length=255)
     city_id = serializers.IntegerField()
@@ -231,7 +231,7 @@ class HotelParkingSituationSerializer(serializers.Serializer):
 
 
 class CreateHotelRequestSerializer(serializers.Serializer):
-    hotel_info = HotelInfoSerializer()
+    hotel_info = CreateHotelInfoSerializer()
     hotel_rules = HotelRulesSerializer()
     parking = HotelParkingSituationSerializer()
 
@@ -320,11 +320,6 @@ class OwnerDashboardSerializer(serializers.Serializer):
     daily_incomes = DailyIncomeSerializer(many=True)
 
 
-# class HotelDashboardSerializer(serializers.Serializer):
-#     reviews = EssentialReviewItemSerializer(many=True)
-#     reservations = HotelDashboardReservationSerializer(many=True)
-#     pass
-
 class HotelDashboardInfoSerializer(DataclassSerializer):
     reviews = EssentialReviewItemSerializer(many=True)
 
@@ -341,3 +336,32 @@ class RoomTypeItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoomType
         fields = ['id', 'name', 'rooms_count', 'occupied_rooms_count', 'bed_types', 'categories']
+
+
+class UpdateHotelFormSerializer(serializers.Serializer):
+    body = serializers.JSONField()
+    cover_img = serializers.ImageField(required=False)
+    added_hotel_images = serializers.ListField(child=serializers.ImageField(), allow_empty=True)
+    removed_hotel_images = serializers.ListField(child=serializers.URLField(), allow_empty=True)
+
+
+class UpdateHotelInfoSerializer:
+    name = serializers.CharField(max_length=255)
+    address = serializers.CharField(max_length=255)
+    city_id = serializers.IntegerField()
+    stars = serializers.IntegerField(validators=[MaxValueValidator(5), MinValueValidator(1)])
+    about = serializers.CharField(max_length=350)
+    added_staff_languages = serializers.ListField(child=serializers.IntegerField())
+    removed_staff_languages = serializers.ListField(child=serializers.IntegerField())
+    website = serializers.URLField(default=None)
+    business_email = serializers.CharField(default=None)
+    country_code_id = serializers.IntegerField()
+    contact_number = serializers.IntegerField()
+    latitude = serializers.FloatField()
+    longitude = serializers.FloatField()
+    added_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    removed_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+
+
+class UpdateHotelRequestSerializer(CreateHotelRequestSerializer):
+    hotel_info = UpdateHotelInfoSerializer()

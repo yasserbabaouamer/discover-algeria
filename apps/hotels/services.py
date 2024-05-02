@@ -10,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 from apps.hotels.models import Hotel, Reservation, ReservedRoomType, RoomAssignment, Language, HotelImage, HotelRules, \
     ParkingSituation
 from .converters import *
-from .enums import HotelStatus, ReservationStatus
+from .enums import HotelStatus, ReservationStatus, RoomTypeStatus
 from .serializers import FilterRequestSerializer
 from ..destinations.models import Country
 from ..owners.models import Owner
@@ -202,3 +202,41 @@ def find_hotel_dashboard_details(hotel_id) -> HotelDashboardInfoDto:
 
 def find_room_types_by_hotel_id(hotel_id: int):
     return RoomType.objects.find_room_types_by_hotel_id(hotel_id)
+
+
+def get_room_type_by_id(room_type_id):
+    return get_object_or_404(RoomType, pk=room_type_id)
+
+
+def delete_room_type(room_type_id: int):
+    room_type = RoomType.objects.find_by_id(room_type_id)
+    room_type.status = RoomTypeStatus.DELETED_BY_OWNER.value
+    room_type.save()
+
+
+def update_hotel_by_id(hotel_id, data: dict):
+    hotel_data: dict = data.get('body')
+    hotel_info = hotel_data.get('hotel_info')
+    hotel_rules = hotel_data.get('hotel_rules')
+    parking = hotel_data.get('parking')
+    parking_available = parking.pop('parking_available')
+    added_staff_languages = get_list_or_404(Language, id__in=hotel_info.pop('added_staff_languages'))
+    removed_staff_languages = get_list_or_404(Language, id__in=hotel_info.pop('removed_staff_languages'))
+    added_amenities = get_list_or_404(Amenity, id__in=hotel_info.pop('added_facilities'))
+    removed_amenities = get_list_or_404(Amenity, id__in=hotel_info.pop('removed_facilities'))
+    with transaction.atomic():
+        hotel = get_object_or_404(Hotel, pk=hotel_id)
+        for key, value in hotel_info.items():
+            setattr(hotel, key, value)
+        hotel.parking_available = parking_available
+        for key, value in hotel_rules.items():
+            setattr(hotel.rules, key, value)
+        for key, value in parking.items():
+            setattr(hotel.parking_situation, key, value)
+        hotel.staff_languages.remove(removed_staff_languages)
+        hotel.staff_languages.add(added_staff_languages)
+        hotel.amenities.remove(removed_amenities)
+        hotel.amenities.add(added_amenities)
+        hotel.save()
+        hotel.rules.save()
+        hotel.parking_situation.save()
