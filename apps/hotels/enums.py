@@ -10,7 +10,7 @@ class ReservationStatus(models.TextChoices):
     DELETED_BY_ADMIN = 'Deleted_By_Admin'
 
 
-class CancellationPolicy(models.TextChoices):
+class HotelCancellationPolicy(models.TextChoices):
     NO = 'No Cancellation Policy'
     DEPENDS = 'Cancellation Depends on Selected Room Type'
     FIXED = 'Fixed Cancellation Before'
@@ -21,7 +21,7 @@ class ParkingType(models.TextChoices):
     PUBLIC = 'Public'
 
 
-class PrepaymentPolicy(models.TextChoices):
+class HotelPrepaymentPolicy(models.TextChoices):
     REQUIRED = 'Required'
     NOT_REQUIRED = 'Not Required'
     DEPENDS = 'Depends on Selected Room Type'
@@ -63,3 +63,13 @@ class RoomTypeStatus(models.TextChoices):
     VISIBLE = 'Visible'
     HIDDEN = 'Hidden'
     DELETED_BY_OWNER = 'Deleted By Owner'
+
+
+class RoomTypeCancellationPolicy(models.TextChoices):
+    NO = 'No Cancellation'
+    BEFORE = 'Cancellation Before'
+
+
+class RoomTypePrepaymentPolicy(models.TextChoices):
+    NOT_REQUIRED = 'Not Required'
+    REQUIRED = 'Required'

@@ -11,8 +11,9 @@ from rest_framework.exceptions import NotFound, ValidationError
 
 from apps.destinations.models import City, Country
 from apps.guests.models import Guest
-from apps.hotels.enums import ReservationStatus, CancellationPolicy, ParkingType, PrepaymentPolicy, HotelStatus, \
-    RoomTypeEnum, RoomTypeStatus
+from apps.hotels.enums import ReservationStatus, HotelCancellationPolicy, ParkingType, HotelPrepaymentPolicy, \
+    HotelStatus, \
+    RoomTypeEnum, RoomTypeStatus, RoomTypeCancellationPolicy, RoomTypePrepaymentPolicy
 from . import managers
 from ..owners.models import Owner
 
@@ -33,7 +34,7 @@ class AmenityCategoryManager(models.Manager):
 class AmenityCategory(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    icon = models.ImageField(upload_to='hotels/amenities/', null=True)
+    icon = models.ImageField(upload_to='accommodations/amenities/', null=True)
     objects = AmenityCategoryManager()
 
     class Meta:
@@ -43,7 +44,7 @@ class AmenityCategory(models.Model):
 class Amenity(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    icon = models.ImageField(upload_to='hotels/amenities/', null=True)
+    icon = models.ImageField(upload_to='accommodations/amenities/', null=True)
     category = models.ForeignKey(AmenityCategory, related_name='amenities', on_delete=models.CASCADE)
 
     class Meta:
@@ -196,7 +197,7 @@ class Hotel(models.Model):
     longitude = models.FloatField(null=True)
     latitude = models.FloatField(null=True)
     website_url = models.URLField(null=True)
-    cover_img = models.ImageField(upload_to='hotels/', null=True)
+    cover_img = models.ImageField(upload_to='accommodations/hotels/', null=True)
     business_email = models.EmailField(null=True)
     country_code = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
     contact_number = models.CharField(max_length=20)
@@ -225,7 +226,7 @@ class Hotel(models.Model):
 
 class HotelImage(models.Model):
     hotel = models.ForeignKey(Hotel, related_name='images', on_delete=models.SET_NULL, null=True)
-    img = models.ImageField(upload_to='hotels/', null=True)
+    img = models.ImageField(upload_to='accommodations/hotels/', null=True)
 
     class Meta:
         db_table = 'hotel_images'
@@ -237,18 +238,18 @@ class HotelRules(models.Model):
     check_in_until = models.TimeField()
     check_out_from = models.TimeField()
     check_out_until = models.TimeField()
-    cancellation_policy = models.CharField(max_length=255, choices=CancellationPolicy.choices)
+    cancellation_policy = models.CharField(max_length=255, choices=HotelCancellationPolicy.choices)
     days_before_cancellation = models.PositiveIntegerField(default=0)
-    prepayment_policy = models.CharField(max_length=255, choices=PrepaymentPolicy.choices)
+    prepayment_policy = models.CharField(max_length=255, choices=HotelPrepaymentPolicy.choices)
 
     class Meta:
         db_table = 'hotel_rules'
         constraints = [
             CheckConstraint(
-                check=Q(cancellation_policy__in=list(CancellationPolicy)), name='chk_cancellation_policy'
+                check=Q(cancellation_policy__in=list(HotelCancellationPolicy)), name='chk_cancellation_policy'
             ),
             CheckConstraint(
-                check=Q(prepayment_policy__in=list(PrepaymentPolicy)), name='chk_prepayment_policy'
+                check=Q(prepayment_policy__in=list(HotelPrepaymentPolicy)), name='chk_prepayment_policy'
             ),
         ]
 
@@ -269,7 +270,9 @@ class ParkingSituation(models.Model):
 
 class BedType(models.Model):
     name = models.CharField(max_length=50)
-    icon = models.ImageField(upload_to='hotels/bed_types/', null=True)
+    icon = models.ImageField(upload_to='accommodations/hotels/bed_types/', null=True)
+    length = models.IntegerField(null=True)
+    width = models.IntegerField(null=True)
 
     class Meta:
         db_table = 'bed_types'
@@ -332,10 +335,9 @@ class RoomType(models.Model):
     id = models.AutoField(primary_key=True)  # Automatically generated unique identifier
     name = models.CharField(max_length=255, choices=RoomTypeEnum.choices)
     size = models.FloatField()  # Assuming size refers to area in square units
-    nb_beds = models.PositiveIntegerField()  # Positive integer for number of beds
-    bed_types = models.ManyToManyField(BedType, db_table='room_type_beds')
+    number_of_guests = models.PositiveIntegerField()
     price_per_night = models.BigIntegerField()
-    cover_img = models.ImageField(upload_to='hotels/', null=True)
+    cover_img = models.ImageField(upload_to='accommodations/hotels/', null=True)
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_types')
     amenities = models.ManyToManyField(Amenity, db_table='room_type_amenities')
     status = models.CharField(max_length=255, choices=RoomTypeStatus.choices, default=RoomTypeStatus.VISIBLE.name)
@@ -353,22 +355,45 @@ class RoomType(models.Model):
         ]
 
 
-class RoomTypePolicy(models.Model):
-    room_type = models.ForeignKey(RoomType, on_delete=models.SET_NULL, null=True, related_name='policy')
-    name = models.CharField(max_length=255)
-    free_cancellation_days = models.IntegerField()
-    breakfast_included = models.BooleanField()
-    prepayment_required = models.BooleanField()
+class RoomTypeImage(models.Model):
+    room_type = models.ForeignKey(RoomType, related_name='images', on_delete=models.SET_NULL, null=True)
+    image = models.ImageField(upload_to='accommodations/room_types/')
+
+
+class RoomTypeBed(models.Model):
+    room_type = models.ForeignKey(RoomType, related_name='beds', on_delete=models.SET_NULL, null=True)
+    bed_type = models.ForeignKey(BedType, on_delete=models.SET_NULL, null=True)
+    quantity = models.IntegerField()
+
+    class Meta:
+        db_table = 'room_type_beds'
+        unique_together = ('room_type', 'bed_type')
+
+
+class RoomTypePolicies(models.Model):
+    room_type = models.OneToOneField(RoomType, on_delete=models.SET_NULL, null=True, related_name='policies')
+    cancellation_policy = models.CharField(max_length=255, choices=RoomTypeCancellationPolicy.choices, null=True)
+    days_before_cancellation = models.PositiveIntegerField(default=0)
+    prepayment_policy = models.CharField(max_length=255, choices=RoomTypePrepaymentPolicy.choices, null=True)
 
     class Meta:
         db_table = 'room_type_policy'
+        constraints = [
+            CheckConstraint(
+                check=Q(cancellation_policy__in=list(RoomTypeCancellationPolicy)),
+                name='chk_room_type_cancellation_policy',
+            ),
+            CheckConstraint(
+                check=Q(prepayment_policy__in=list(RoomTypePrepaymentPolicy)),
+                name='chk_room_type_prepayment_policy',
+            )
+        ]
 
 
 class Room(models.Model):
     id = models.AutoField(primary_key=True)
-    code = models.IntegerField()
+    code = models.IntegerField(null=True)
     description = models.CharField(max_length=255, null=True)
-    number_of_guests = models.PositiveIntegerField()
     room_type = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name='rooms')
     objects = managers.RoomManager()
 

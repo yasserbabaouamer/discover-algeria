@@ -1,9 +1,11 @@
 from django.core.validators import MinValueValidator, RegexValidator, MaxValueValidator
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework_dataclasses.serializers import DataclassSerializer
 
 from .dtos import *
-from .enums import PrepaymentPolicy, ParkingType, CancellationPolicy, SortReservations, RoomTypeEnum, ReservationStatus
+from .enums import HotelPrepaymentPolicy, ParkingType, HotelCancellationPolicy, SortReservations, RoomTypeEnum, \
+    ReservationStatus, RoomTypeCancellationPolicy, RoomTypePrepaymentPolicy
 from .models import Hotel, HotelImage, RoomType, Reservation, Amenity, AmenityCategory, BedType, GuestReview
 
 
@@ -200,9 +202,9 @@ class HotelRulesSerializer(serializers.Serializer):
     check_in_until = serializers.TimeField()
     check_out_from = serializers.TimeField()
     check_out_until = serializers.TimeField()
-    cancellation_policy = serializers.ChoiceField(choices=CancellationPolicy.choices)
+    cancellation_policy = serializers.ChoiceField(choices=HotelCancellationPolicy.choices)
     days_before_cancellation = serializers.IntegerField(default=0, validators=[MinValueValidator(1)])
-    prepayment_policy = serializers.ChoiceField(choices=PrepaymentPolicy.choices)
+    prepayment_policy = serializers.ChoiceField(choices=HotelPrepaymentPolicy.choices)
 
     def validate(self, data):
         if data.get('check_in_until') < data.get('check_in_from'):
@@ -329,14 +331,16 @@ class HotelDashboardInfoSerializer(DataclassSerializer):
 
 class RoomTypeItemSerializer(serializers.ModelSerializer):
     categories = AmenityCategorySerializer(many=True)
-    bed_types = BedTypeSerializer(many=True)
+    beds = BedTypeSerializer(many=True)
     rooms_count = serializers.IntegerField()
     occupied_rooms_count = serializers.IntegerField()
 
     class Meta:
         model = RoomType
-        fields = ['id', 'name', 'rooms_count', 'occupied_rooms_count', 'bed_types', 'categories']
+        fields = ['id', 'name', 'rooms_count', 'occupied_rooms_count', 'beds', 'categories']
 
+
+# Update Hotel Serializers
 
 class UpdateHotelInfoSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
@@ -360,17 +364,105 @@ class UpdateHotelRequestSerializer(serializers.Serializer):
     hotel_info = UpdateHotelInfoSerializer()
     hotel_rules = HotelRulesSerializer()
     parking = HotelParkingSituationSerializer()
-    removed_hotel_images = serializers.ListField(child=serializers.URLField(), allow_empty=True)
+    removed_images_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
 
 
 class UpdateHotelFormSerializer(serializers.Serializer):
     body = serializers.JSONField()
     cover_img = serializers.ImageField(required=False)
-    added_hotel_images = serializers.ListField(child=serializers.ImageField(), allow_empty=True)
+    added_images = serializers.ListField(child=serializers.ImageField(), allow_empty=True)
 
     def validate(self, data):
         update_hotel_req = UpdateHotelRequestSerializer(data=data.get('body'))
         if not update_hotel_req.is_valid():
             raise serializers.ValidationError(detail=update_hotel_req.errors)
         print('validated data of update hotel request :', update_hotel_req.validated_data)
+        return data
+
+
+# Create Room Type Serializers
+
+class BedTypeQuantitySerializer(serializers.Serializer):
+    bed_type_id = serializers.IntegerField()
+    quantity = serializers.IntegerField(validators=[MinValueValidator(0)])
+
+    def validate(self, data):
+        # Check bed type existence
+        bed_type = get_object_or_404(BedType, pk=data.get('bed_type_id'))
+        return data
+
+
+class CreateRoomTypeRequestSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=RoomTypeEnum.choices)
+    number_of_rooms = serializers.IntegerField(required=True, validators=[MinValueValidator(1)])
+    number_of_guests = serializers.IntegerField(validators=[MinValueValidator(1)])
+    bed_type_quantities = serializers.ListField(child=BedTypeQuantitySerializer(), allow_empty=False)
+    size = serializers.IntegerField(validators=[MinValueValidator(1)])
+    price_per_night = serializers.IntegerField(validators=[MinValueValidator(500)])
+    amenities = serializers.ListField(child=serializers.IntegerField())
+    cancellation_policy = serializers.ChoiceField(choices=RoomTypeCancellationPolicy.choices)
+    days_before_cancellation = serializers.IntegerField(required=False, validators=[MinValueValidator(0)])
+    prepayment_policy = serializers.ChoiceField(choices=RoomTypePrepaymentPolicy.choices)
+
+    def validate(self, data):
+        cancellation_policy = data.get('cancellation_policy')
+        days_before_cancellation = data.pop('days_before_cancellation', None)
+        if cancellation_policy == RoomTypeCancellationPolicy.BEFORE.value and days_before_cancellation is None:
+            raise serializers.ValidationError(
+                {'detail': "Set the number of days before cancellation"})
+        return data
+
+
+class CreateRoomTypeFormSerializer(serializers.Serializer):
+    body = serializers.JSONField()
+    cover_img = serializers.ImageField()
+    images = serializers.ListField(child=serializers.ImageField(), allow_empty=True)
+
+    def validate(self, data):
+        body_data = data.get('body')
+        print(body_data)
+        create_room_type_request = CreateRoomTypeRequestSerializer(data=body_data)
+        if not create_room_type_request.is_valid():
+            raise serializers.ValidationError(detail=create_room_type_request.errors)
+        print('validated data of create room request:', create_room_type_request.validated_data)
+        return data
+
+
+# Update Room Type Serializers
+
+class UpdateRoomTypeRequestSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=RoomTypeEnum.choices)
+    number_of_rooms = serializers.IntegerField(validators=[MinValueValidator(1)]),
+    number_of_guests = serializers.IntegerField(validators=[MinValueValidator(1)])
+    bed_type_quantities = serializers.ListField(child=BedTypeQuantitySerializer(), allow_empty=False)
+    size = serializers.FloatField(validators=[MinValueValidator(1)])
+    price_per_night = serializers.IntegerField(validators=[MinValueValidator(500)])
+    added_amenities = serializers.ListField(child=serializers.IntegerField(), required=False)
+    removed_amenities = serializers.ListField(child=serializers.IntegerField(), required=False)
+    removed_images = serializers.ListField(child=serializers.IntegerField(), required=False)
+    cancellation_policy = serializers.ChoiceField(choices=RoomTypeCancellationPolicy.choices)
+    prepayment_policy = serializers.ChoiceField(choices=RoomTypePrepaymentPolicy.choices)
+
+    def validate(self, data):
+        # Get all available bed type IDs from the database
+        available_bed_type_ids = set(BedType.objects.values_list('id', flat=True))
+        print("available_bed_type_ids :", available_bed_type_ids)
+        # Extract bed type IDs from the request data
+        bed_type_ids_from_request = set(item['bed_type_id'] for item in data.get('bed_type_quantities'))
+        print("bed type IDs from request :", bed_type_ids_from_request)
+        # Check if all bed type IDs from the request are present in the available bed types
+        if not bed_type_ids_from_request.issuperset(available_bed_type_ids):
+            raise serializers.ValidationError("Not all bed types are specified in the request.")
+        return data
+
+
+class UpdateRoomTypeFormSerializer(serializers.Serializer):
+    body = serializers.JSONField()
+    cover_img = serializers.ImageField(required=False)
+    added_images = serializers.ListField(child=serializers.ImageField(), required=False)
+
+    def validate(self, data):
+        update_request = UpdateRoomTypeRequestSerializer(data=data.get('body'))
+        if not update_request.is_valid():
+            raise serializers.ValidationError(update_request.errors)
         return data

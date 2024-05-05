@@ -204,7 +204,7 @@ class ManageOwnerHotelDetailsView(APIView):
         update_request = serializers.UpdateHotelFormSerializer(data=self.request.data)
         if not update_request.is_valid():
             raise ValidationError(update_request.errors)
-        services.update_hotel_by_id(hotel_id, update_request.validated_data)
+        services.update_hotel(hotel_id, update_request.validated_data)
         return Response(data={'detail': "Your hotel has been updated successfully"},
                         status=status.HTTP_200_OK)
 
@@ -226,7 +226,7 @@ class ListCreateOwnerReservationView(APIView):
     permission_classes = [IsOwner]
 
     @extend_schema(
-        summary='Get Reservations route',
+        summary='Get My Reservations route',
         parameters=[serializers.FilterReservationsParamsSerializer],
         tags=['Owner']
     )
@@ -248,7 +248,8 @@ class ManageOwnerReservationView(APIView):
     permission_classes = [IsOwner]
 
     @extend_schema(
-        summary='Cancel a reservation - Owner'
+        summary='Cancel a reservation - Owner',
+        tags=['Owner']
     )
     def put(self, request, *args, **kwargs):
         reservation_id = kwargs.pop('r_id', None)
@@ -260,11 +261,12 @@ class ManageOwnerReservationView(APIView):
         return Response(data={'detail': "This Reservation has been cancelled"}, status=status.HTTP_200_OK)
 
 
-class ListCreateHotelRoomType(APIView):
+class ListCreateRoomType(APIView):
     permission_classes = [IsOwner]
 
     @extend_schema(
-        summary='Get Room types by Hotel ID - Owner'
+        summary='Get Room types by Hotel ID - Owner',
+        tags=['Owner']
     )
     def get(self, request, *args, **kwargs):
         hotel_id = kwargs.pop('hotel_id', None)
@@ -274,6 +276,22 @@ class ListCreateHotelRoomType(APIView):
         room_types = services.find_room_types_by_hotel_id(hotel_id)
         response = serializers.RoomTypeItemSerializer(room_types, many=True)
         return Response(response.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary='Create Room Type',
+        tags=['Owner']
+    )
+    def post(self, request, *args, **kwargs):
+        hotel_id = kwargs.pop('hotel_id', None)
+        if hotel_id is None:
+            raise ValidationError({'detail': 'Provide a hotel id'})
+        self.check_object_permissions(request, services.find_hotel_by_id(hotel_id))
+        create_room_type_form = serializers.CreateRoomTypeFormSerializer(data=request.data)
+        if not create_room_type_form.is_valid():
+            raise ValidationError(create_room_type_form.errors)
+        services.create_room_type(hotel_id, create_room_type_form.validated_data)
+        return Response({'detail': "Your room type has been created successfully"},
+                        status=status.HTTP_201_CREATED)
 
 
 class ManageHotelRoomType(APIView):
@@ -287,13 +305,28 @@ class ManageHotelRoomType(APIView):
         room_type_id = kwargs.pop('room_type_id', None)
         if room_type_id is None:
             raise ValidationError({'detail': 'Provide a room type id'})
+        return Response()
 
+    # TODO: Test this method
     @extend_schema(
         summary='Update Room type',
-        tags=['Owner']
+        tags=['Owner'],
+        request=serializers.UpdateRoomTypeFormSerializer,
+        responses={
+            200: OpenApiResponse(description='Successful update')
+        }
     )
     def put(self, request, *args, **kwargs):
-        pass
+        room_type_id = kwargs.pop('room_type_id', None)
+        if room_type_id is None:
+            raise ValidationError({'detail': 'Provide a room type id'})
+        hotel = services.find_hotel_by_room_type_id(room_type_id)
+        self.check_object_permissions(request, hotel)
+        update_room_type_form = serializers.UpdateRoomTypeFormSerializer(data=request.data)
+        if not update_room_type_form.is_valid():
+            raise ValidationError(update_room_type_form.errors)
+        services.update_room_type(room_type_id, update_room_type_form.validated_data)
+        return Response({'detail': 'The room type has been updated successfully'})
 
     # TODO: Test this method later
     @extend_schema(
@@ -304,7 +337,7 @@ class ManageHotelRoomType(APIView):
         room_type_id = kwargs.pop('room_type_id', None)
         if room_type_id is None:
             raise ValidationError({'detail': 'Provide a room type id'})
-        room_type = services.get_room_type_by_id(room_type_id)
+        room_type = services.find_room_type_by_id(room_type_id)
         self.check_object_permissions(request, room_type.hotel)
         services.delete_room_type(room_type_id)
         return Response({'detail': "The room type has been deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
