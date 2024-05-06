@@ -1,5 +1,7 @@
 from .dtos import *
-from .models import Hotel, GuestReview, RoomType, Room
+from .enums import HotelCancellationPolicy, HotelPrepaymentPolicy, ParkingType
+from .models import Hotel, GuestReview, RoomType, Room, Language
+from ..destinations.models import Country, City
 
 
 class ReviewDtoConverter:
@@ -90,15 +92,15 @@ class HotelDashboardInfoDtoConverter:
             [r.review for r in hotel.reservations.all()]
         )
 
-    # class HotelItemDtoConverter:
-    #     amenity_converter = Amenity
-    #
-    #     def to_dto(self, hotel: Hotel) -> HotelItemDto:
-    #         return HotelItemDto(
-    #             hotel.id, hotel.name, hotel.stars, f"{hotel.address}, {hotel.city.name}, {hotel.city.country.name}",
-    #             hotel.website_url, hotel.business_email, hotel.nb_rooms, hotel.nb_occupied_rooms, hotel.nb_reservations,
-    #             hotel.nb_check_ins, hotel.nb_cancellations, hotel.revenue, hotel.amenities.all()
-    #         )
-    #
-    #     def to_dtos_list(self, hotels) -> List[HotelItemDto]:
-    #         return [self.to_dto(hotel) for hotel in hotels]
+
+def get_cancellation_policy_dto(policy: str,
+                                selected_policy: str) -> HotelCancellationPolicyDTO:
+    return HotelCancellationPolicyDTO(
+        policy=policy,
+        checked=(policy == selected_policy)
+    )
+
+
+class HotelEditInfoDtoConverter:
+    def to_dto(self, hotel: Hotel) -> HotelEditInfoDTO:
+        pass

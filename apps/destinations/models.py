@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q, FloatField, Func, F, Value, Count, Case, When
+from django.db.models import Q, FloatField, Func, F, Value, Count, Case, When, Prefetch, Min
 from rest_framework.exceptions import NotFound
 
 
@@ -20,7 +20,7 @@ class CountryManger(models.Manager):
 
 class Country(models.Model):
     name = models.CharField(max_length=255)
-    flag = models.ImageField(upload_to='destinations/', null=True)
+    flag = models.ImageField(upload_to='destinations/countries/', null=True)
     country_code = models.CharField(max_length=10, null=True)
     objects = CountryManger()
 
@@ -41,9 +41,16 @@ class CityManager(models.Manager):
             name_ratio__gt=0.3
         ).order_by('-name_ratio').all()
 
-    def find_by_id(self, _id: int):
+    def find_by_id(self, city_id: int):
+        from apps.hotels.models import Hotel
         try:
-            return self.get(pk=_id)
+            return self.prefetch_related(
+                Prefetch('hotels',
+                         queryset=Hotel.objects.filter(city_id=city_id)
+                         .annotate(
+                             starts_at=Min('room_types__price_per_night')
+                         ))
+            ).get(pk=city_id)
         except ObjectDoesNotExist as e:
             raise NotFound({'detail': 'No such city with this id'})
 
@@ -55,7 +62,7 @@ class CityManager(models.Manager):
 
 class City(models.Model):
     name = models.CharField(max_length=255)
-    cover_img = models.ImageField(upload_to='destinations/')
+    cover_img = models.ImageField(upload_to='destinations/cities/', null=True)
     description = models.TextField(null=True)
     country = models.ForeignKey(Country, related_name='cities', on_delete=models.SET_NULL, null=True)
     objects = CityManager()

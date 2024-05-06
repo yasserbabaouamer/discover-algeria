@@ -3,6 +3,7 @@ from datetime import timedelta
 from threading import Thread
 
 from django.contrib.auth import authenticate
+from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
@@ -45,7 +46,11 @@ def setup_guest_profile(user: User, profile_request: dict):
         user=user, defaults={
             'first_name': profile_request['first_name'],
             'last_name': profile_request['last_name'],
-            'profile_pic': profile_request['profile_pic']
+            'profile_pic': profile_request.get('profile_pic', 'users/default_profile_pic.png')
         }
     )
     return created
+
+
+def find_guest_by_id(guest_id):
+    return get_object_or_404(Guest, pk=guest_id)

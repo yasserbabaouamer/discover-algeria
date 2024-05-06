@@ -1,13 +1,14 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import serializers
-from . import services as guest_services
-from .serializers import *
+from . import services
+from ..hotels.permissions import IsGuest
 
 
 class LoginGuestView(APIView):
@@ -17,18 +18,19 @@ class LoginGuestView(APIView):
     @extend_schema(
         tags=['Guests'],
         summary='Login a guest',
-        request=GuestLoginRequestSerializer,
+        request=serializers.GuestLoginRequestSerializer,
         responses={
-            200: OpenApiResponse(response=TokensSerializer),
-            201: OpenApiResponse(description='Inactivated account , Confirmation code sent to the user email')
+            200: OpenApiResponse(response=serializers.TokensSerializer),
+            201: OpenApiResponse(description='Confirmation code sent to the user email'),
+            400: OpenApiResponse(description='Invalid information')
         }
     )
     def post(self, request: Request):
         login_request = serializers.GuestLoginRequestSerializer(data=self.request.data)
         if login_request.is_valid():
-            result = guest_services.authenticate_guest(login_request.validated_data)
+            result = services.authenticate_guest(login_request.validated_data)
             if isinstance(result, dict):
-                tokens_serializer = TokensSerializer(result)
+                tokens_serializer = serializers.TokensSerializer(result)
                 return Response(data=tokens_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(data={'detail': 'Confirmation code sent successfully'}, status=status.HTTP_201_CREATED)
@@ -42,16 +44,52 @@ class SetupGuestProfileForExistingUser(APIView):
     @extend_schema(
         tags=['Guests'],
         summary='Quick profile setup',
-        request=QuickProfileRequestSerializer
+        request=serializers.QuickProfileRequestSerializer,
+        responses={
+            201: OpenApiResponse(description='Your account has been created successfully'),
+            400: OpenApiResponse(description='Invalid information')
+        }
     )
     def post(self, request):
         profile_request = serializers.QuickProfileRequestSerializer(data=self.request.data)
         if profile_request.is_valid():
-            created = guest_services.setup_guest_profile(self.request.user,
-                                                         profile_request.validated_data)
+            created = services.setup_guest_profile(self.request.user,
+                                                   profile_request.validated_data)
             if created:
                 return Response(data={'detail': 'Your profile has been created successfully'},
-                                status=status.HTTP_200_OK)
+                                status=status.HTTP_201_CREATED)
             else:
                 raise ValidationError({'detail': 'You have already an existing profile *__*'})
         raise ValidationError(profile_request.errors)
+
+
+class GetEssentialGuestInfo(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        summary='Get Essential Guest Information'
+    )
+    def get(self, request, *args, **kwargs):
+        guest_id = kwargs.pop('guest_id', None)
+        if guest_id is None:
+            raise ValidationError({'detail': 'Provide a guest_id'})
+        guest = services.find_guest_by_id(guest_id)
+        response = serializers.EssentialGuestInfoSerializer(guest)
+        return Response(response.data, status=status.HTTP_200_OK)
+
+
+class ManageMyGuestProfile(APIView):
+    permission_classes = [IsGuest]
+
+    @extend_schema(
+        summary='Get Guest Profile Information',
+    )
+    def get(self, request, *args, **kwargs):
+        pass
+
+    @extend_schema(
+        summary='Update Profile Information'
+    )
+    def put(self, request, *args, **kwargs):
+        pass

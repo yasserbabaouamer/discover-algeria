@@ -34,7 +34,6 @@ class GetCityDetailsView(APIView):
         try:
             city_id = self.request.query_params['id']
             city = services.get_city_details_by_id(city_id)
-            print(city)
             response = serializers.CityDetailsSerializer(city)
             return Response(data=response.data, status=status.HTTP_200_OK)
         except KeyError as e:

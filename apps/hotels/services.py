@@ -394,3 +394,35 @@ def update_room_type(room_type_id, form_data: dict):
 def find_hotel_by_room_type_id(room_type_id):
     room_type = RoomType.objects.find_by_id(room_type_id)
     return room_type.hotel
+
+
+def find_amenities_by_hotel_id(hotel_id):
+    return Amenity.objects.find_amenities_by_hotel_id(hotel_id)
+
+
+def get_hotel_info_for_edit(hotel_id) -> HotelEditInfoDTO:
+    hotel = Hotel.objects.select_related('rules').get(id=hotel_id)
+    selected_cancellation_policy = hotel.rules.cancellation_policy
+    selected_prepayment_policy = hotel.rules.prepayment_policy
+    selected_parking_type = hotel.parking_situation.parking_type
+    return HotelEditInfoDTO(
+        HotelInfoDTO(
+            hotel.country_code.country_code,
+            [CountryCodeDTO(country.id, country.name, country.country_code) for country in Country.objects.all()],
+            [CityDTO(city.id, city.name) for city in City.objects.all()],
+            [FacilityDTO(facility.id, facility.name, facility.icon, facility.checked) for facility in
+             Amenity.objects.find_amenities_by_hotel_id(hotel.id)],
+            [StaffLanguageDTO(language.id, language.name, language.checked)
+             for language in Language.objects.find_languages_by_hotel_id(hotel_id)]
+        ),
+        HotelRulesDTO(
+            [get_cancellation_policy_dto(policy, selected_cancellation_policy) for policy in
+             HotelCancellationPolicy],
+            [HotelPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
+             for policy in HotelPrepaymentPolicy]
+        ),
+        HotelParkingSituationDTO(
+            [ParkingTypeDTO(parking_type, parking_type == selected_parking_type)
+             for parking_type in ParkingType]
+        )
+    )

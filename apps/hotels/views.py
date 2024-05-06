@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from .dtos import HotelDashboardInfoDto
 from .permissions import IsOwner, IsGuest
+
 from . import services, serializers
 
 
@@ -128,16 +129,13 @@ class SearchHotelsByCity(APIView):
         raise ValidationError(request.errors)
 
 
-class HotelAmenities(APIView):
+class GetAllAmenities(APIView):
     authentication_classes = []
     permission_classes = []
 
     def get(self, request):
         response = serializers.AmenityCategoryDtoSerializer(services.find_hotel_amenities(), many=True)
         return Response(data=response.data, status=status.HTTP_200_OK)
-
-
-# Owner Dashboard endpoints
 
 
 class ListCreateOwnerHotelView(APIView):
@@ -171,6 +169,21 @@ class ListCreateOwnerHotelView(APIView):
         return Response({'detail': 'Your hotel has been created successfully'}, status=status.HTTP_201_CREATED)
 
 
+# Owner Dashboard endpoints
+
+class GetHotelEditInformation(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, *args, **kwargs):
+        hotel_id = kwargs.pop('hotel_id', None)
+        if hotel_id is None:
+            raise ValidationError({'detail': 'Provide a hotel id'})
+        hotel_edit_info = services.get_hotel_info_for_edit(hotel_id)
+        response = serializers.HotelEditInfoDtoSerializer(hotel_edit_info)
+        return Response(data=response.data, status=status.HTTP_200_OK)
+
+
 class ManageOwnerHotelDetailsView(APIView):
     permission_classes = [IsOwner]
     parser_classes = [JSONParser, MultiPartParser]
@@ -190,7 +203,7 @@ class ManageOwnerHotelDetailsView(APIView):
         response = serializers.HotelDashboardInfoSerializer(hotel_info)
         return Response(data=response.data, status=status.HTTP_200_OK)
 
-    # TODO: Test this method later
+    # TODO: Test this method later - it's working
     @extend_schema(
         summary='Update Hotel - Owner',
         tags=['Owner']
@@ -307,7 +320,6 @@ class ManageHotelRoomType(APIView):
             raise ValidationError({'detail': 'Provide a room type id'})
         return Response()
 
-    # TODO: Test this method
     @extend_schema(
         summary='Update Room type',
         tags=['Owner'],
@@ -328,7 +340,6 @@ class ManageHotelRoomType(APIView):
         services.update_room_type(room_type_id, update_room_type_form.validated_data)
         return Response({'detail': 'The room type has been updated successfully'})
 
-    # TODO: Test this method later
     @extend_schema(
         summary='Delete Room type',
         tags=['Owner']

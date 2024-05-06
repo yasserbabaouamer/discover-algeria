@@ -38,9 +38,12 @@ class SignupView(APIView):
     permission_classes = []
 
     @extend_schema(
-        tags=['Guests'],
+        tags=['Authentication'],
         request=SignupRequestSerializer,
-        responses={201: OpenApiResponse(description='Account Created , Confirmation code send to guest email')},
+        responses={
+            201: OpenApiResponse(description='Account Created , Confirmation code send to guest email'),
+            400: OpenApiResponse(description='Invalid information')
+        },
         summary='Signup for guests'
     )
     def post(self, request: Request):
@@ -106,7 +109,7 @@ class ResetPasswordView(APIView):
     @extend_schema(
         tags=['Authentication'],
         summary='Reset Password 01',
-        description='This endpoint is used ',
+        description='Used to send the reset password code to the user email.',
         request=serializers.EmailSerializer,
         responses={
             200: OpenApiResponse(description='Confirmation code sent successfully')
@@ -133,7 +136,7 @@ class VerifyResetPasswordView(APIView):
         request = serializers.ConfirmationCodeRequestSerializer(data=_request.data)
         if request.is_valid():
             token = services.generate_token_for_password_reset(request.validated_data)
-            return Response(data={'token': token}, status=status.HTTP_200_OK)
+            return Response(data={'token': token}, status=status.HTTP_201_CREATED)
         raise ValidationError(request.errors)
 
 
@@ -148,6 +151,7 @@ class CompletePasswordResetView(APIView):
         complete_request = serializers.CompletePasswordResetRequestSerializer(data=_request.data)
         if complete_request.is_valid():
             services.update_password(complete_request.validated_data)
+            # tokens = services.generate_tokens_for_guest()
             return Response(
                 data={'detail': 'Your Password Has Been Changed Successfully'},
                 status=status.HTTP_200_OK

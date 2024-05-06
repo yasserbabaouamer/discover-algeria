@@ -20,5 +20,5 @@ class IsGuest(permissions.BasePermission):
             return request.user.has_guest_account()
         return False
 
-    def has_object_permission(self, request, view, hotel):
-        return request.user == hotel.guest.user
+    def has_object_permission(self, request, view, guest):
+        return request.user.guest == guest

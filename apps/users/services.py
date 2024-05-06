@@ -30,11 +30,7 @@ def register_new_user(signup_request: dict):
     email = signup_request['email']
     if is_email_already_exists(email):
         raise ValidationError(detail={'msg': 'This email is already exists'})
-    try:
-        password_validation.validate_password(signup_request['password'])
-    except Exception as error:
-        raise rest_framework.exceptions.ValidationError(detail=error)
-
+    password_validation.validate_password(signup_request['password'])
     with transaction.atomic():
         user = User.objects.create_user(
             signup_request['email'],
@@ -88,7 +84,7 @@ def activate_user(confirmation_request: dict):
             user.activation.save()
             refresh = RefreshToken.for_user(user)
             return {
-                'access': refresh.access_token,
+                'access': refresh.access_token.token,
                 'refresh': refresh.token
             }
     else:
@@ -154,10 +150,10 @@ def generate_token_for_password_reset(confirmation_request):
 
 def update_password(complete_request: dict):
     password_reset = PasswordResetCode.objects.find_by_token(complete_request['token'])
+    if password_reset.is_token_used:
+        raise ValidationError({'detail': 'This token has been used'})
     user = password_reset.user
-    try:
-        password_validation.validate_password(complete_request['new_password'])
-    except django.contrib.auth.password_validation.ValidationError as e:
-        raise ValidationError({'detail': e})
+    password_validation.validate_password(complete_request['new_password'])
     user.set_password(complete_request['new_password'])
+    password_reset.is_token_used = True
     user.save()

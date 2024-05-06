@@ -1,30 +1,32 @@
-from django.contrib.auth.password_validation import MinimumLengthValidator
-from rest_framework import serializers as rest_serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework import serializers
 
 from apps.guests.models import Guest
 
 
-class GuestLoginRequestSerializer(rest_serializers.Serializer):
-    email = rest_serializers.CharField(max_length=255, required=True)
-    password = rest_serializers.CharField(max_length=255, required=True)
+class GuestLoginRequestSerializer(serializers.Serializer):
+    email = serializers.CharField(max_length=255, required=True)
+    password = serializers.CharField(max_length=255, required=True)
 
 
-class QuickProfileRequestSerializer(rest_serializers.Serializer):
-    first_name = rest_serializers.CharField(max_length=255)
-    last_name = rest_serializers.CharField(max_length=255)
-    profile_pic = rest_serializers.ImageField()
+class QuickProfileRequestSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=255)
+    last_name = serializers.CharField(max_length=255)
+    profile_pic = serializers.ImageField(required=False)
 
 
-class ProfileSerializer(rest_serializers.ModelSerializer):
+class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Guest
         fields = ['first_name', 'last_name', 'birthday', 'profile_pic']
 
 
-class TokensSerializer(rest_serializers.Serializer):
-    access = rest_serializers.CharField(max_length=255)
-    refresh = rest_serializers.CharField(max_length=255)
-    has_guest_acc = rest_serializers.BooleanField()
+class TokensSerializer(serializers.Serializer):
+    access = serializers.CharField(max_length=255)
+    refresh = serializers.CharField(max_length=255)
+    has_guest_acc = serializers.BooleanField()
 
 
+class EssentialGuestInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Guest
+        fields = ['id', 'first_name', 'last_name', 'profile_pic']

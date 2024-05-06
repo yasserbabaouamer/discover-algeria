@@ -1,9 +1,11 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from . import serializers, services
 from .dtos import OwnerTokens
+from .permissions import *
 
 
 class LoginOwnerView(APIView):
@@ -34,4 +36,21 @@ class SetupOwnerProfileView(APIView):
         raise ValidationError(detail=request_body.errors)
 
 
+class ManageProfileView(APIView):
+    permission_classes = [IsProfileOwner]
 
+    @extend_schema(
+        summary='Get owner profile information',
+        tags=['Owner']
+    )
+    def get(self, request, *args, **kwargs):
+
+        pass
+
+
+    @extend_schema(
+        summary='Update profile information',
+        tags=['Owner']
+    )
+    def put(self, request, *args, **kwargs):
+        pass

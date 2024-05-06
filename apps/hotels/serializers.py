@@ -6,7 +6,8 @@ from rest_framework_dataclasses.serializers import DataclassSerializer
 from .dtos import *
 from .enums import HotelPrepaymentPolicy, ParkingType, HotelCancellationPolicy, SortReservations, RoomTypeEnum, \
     ReservationStatus, RoomTypeCancellationPolicy, RoomTypePrepaymentPolicy
-from .models import Hotel, HotelImage, RoomType, Reservation, Amenity, AmenityCategory, BedType, GuestReview
+from .models import Hotel, HotelImage, RoomType, Reservation, Amenity, AmenityCategory, BedType, GuestReview, Language
+from ..destinations.models import Country, City
 
 
 class HotelImageSerializer(serializers.ModelSerializer):
@@ -47,6 +48,17 @@ class ReservationSerializer(serializers.ModelSerializer):
 
 
 class AmenitySerializer(serializers.ModelSerializer):
+    """
+    Use the same serializer for
+    """
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # Add 'checked' field dynamically if it's not already defined in Meta class
+        if 'checked' not in fields and hasattr(self.Meta.model, 'checked'):
+            fields['checked'] = serializers.BooleanField(source='checked', read_only=True)
+        return fields
+
     class Meta:
         model = Amenity
         fields = '__all__'
@@ -101,12 +113,12 @@ class BedTypeSerializer(serializers.ModelSerializer):
 
 class RoomTypeDtoSerializer(DataclassSerializer):
     categories = AmenityCategorySerializer(many=True)
-    main_bed_type = BedTypeSerializer()
+    beds = BedTypeSerializer(many=True)
 
     class Meta:
         dataclass = RoomTypeDTO
         fields = ["id", "name", "size", "nb_beds", "price_per_night", "cover_img",
-                  "nb_available_rooms", "main_bed_type", "categories"]
+                  "nb_available_rooms", "beds", "categories"]
 
 
 class GetHotelAvailableRoomTypesRequestSerializer(serializers.Serializer):
@@ -181,29 +193,35 @@ class MyHotelItemSerializer(serializers.ModelSerializer):
                   'reservations_count', 'check_ins_count', 'cancellations_count', 'occupied_rooms_count']
 
 
-class CreateHotelInfoSerializer(serializers.Serializer):
+class BaseHotelInfoSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
     address = serializers.CharField(max_length=255)
-    city_id = serializers.IntegerField()
     stars = serializers.IntegerField(validators=[MaxValueValidator(5), MinValueValidator(1)])
     about = serializers.CharField(max_length=350)
-    staff_languages = serializers.ListField(child=serializers.IntegerField())
-    website = serializers.URLField(default=None)
     business_email = serializers.CharField(default=None)
-    country_code_id = serializers.IntegerField()
     contact_number = serializers.IntegerField()
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
+    website = serializers.URLField(default=None)
+
+
+class CreateHotelInfoSerializer(BaseHotelInfoSerializer):
+    country_code_id = serializers.IntegerField()  # Phone number country code
+    city_id = serializers.IntegerField()  # Current city id
+    staff_languages = serializers.ListField(child=serializers.IntegerField())
     facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
 
 
-class HotelRulesSerializer(serializers.Serializer):
+class BaseHotelRulesSerializer(serializers.Serializer):
     check_in_from = serializers.TimeField()
     check_in_until = serializers.TimeField()
     check_out_from = serializers.TimeField()
     check_out_until = serializers.TimeField()
-    cancellation_policy = serializers.ChoiceField(choices=HotelCancellationPolicy.choices)
     days_before_cancellation = serializers.IntegerField(default=0, validators=[MinValueValidator(1)])
+
+
+class CreateHotelRulesSerializer(BaseHotelRulesSerializer):
+    cancellation_policy = serializers.ChoiceField(choices=HotelCancellationPolicy.choices)
     prepayment_policy = serializers.ChoiceField(choices=HotelPrepaymentPolicy.choices)
 
     def validate(self, data):
@@ -214,9 +232,12 @@ class HotelRulesSerializer(serializers.Serializer):
         return data
 
 
-class HotelParkingSituationSerializer(serializers.Serializer):
+class BaseHotelParkingSituationSerializer(serializers.Serializer):
     parking_available = serializers.BooleanField()
     reservation_needed = serializers.BooleanField(required=False)
+
+
+class CreateHotelParkingSituationSerializer(BaseHotelParkingSituationSerializer):
     parking_type = serializers.ChoiceField(choices=ParkingType.choices, required=False)
 
     def validate(self, data):
@@ -234,8 +255,8 @@ class HotelParkingSituationSerializer(serializers.Serializer):
 
 class CreateHotelRequestSerializer(serializers.Serializer):
     hotel_info = CreateHotelInfoSerializer()
-    hotel_rules = HotelRulesSerializer()
-    parking = HotelParkingSituationSerializer()
+    hotel_rules = CreateHotelRulesSerializer()
+    parking = CreateHotelParkingSituationSerializer()
 
 
 class CreateHotelFormSerializer(serializers.Serializer):
@@ -341,6 +362,80 @@ class RoomTypeItemSerializer(serializers.ModelSerializer):
 
 
 # Update Hotel Serializers
+class CountryCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        fields = '__all__'
+
+
+class CitySerializer(serializers.ModelSerializer):
+    city_name = serializers.SerializerMethodField()
+
+    def get_city_name(self, city):
+        return f"{city.name}, {city.country.name}"
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # Add 'checked' field dynamically if it's not already defined in Meta class
+        if 'checked' not in fields and hasattr(self.Meta.model, 'checked'):
+            fields['checked'] = serializers.BooleanField(source='checked', read_only=True)
+        return fields
+
+    class Meta:
+        model = City
+        fields = ['id', 'city_name']
+
+
+class StaffLanguageSerializer(serializers.ModelSerializer):
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # Add 'checked' field dynamically if it's not already defined in Meta class
+        if 'checked' not in fields and hasattr(self.Meta.model, 'checked'):
+            fields['checked'] = serializers.BooleanField(source='checked', read_only=True)
+        return fields
+
+    class Meta:
+        model = Language
+        fields = '__all__'
+
+
+class HotelInfoSerializer(BaseHotelInfoSerializer):
+    country_codes = CountryCodeSerializer(many=True)
+    cities = CitySerializer(many=True)
+    facilities = AmenitySerializer(many=True)
+    staff_languages = StaffLanguageSerializer(many=True)
+
+
+class HotelCancellationPolicySerializer(serializers.Serializer):
+    policy = serializers.ChoiceField(choices=HotelCancellationPolicy.choices)
+    checked = serializers.BooleanField()
+
+
+class HotelPrepaymentPolicySerializer(serializers.Serializer):
+    policy = serializers.ChoiceField(choices=HotelPrepaymentPolicy.choices)
+    checked = serializers.BooleanField()
+
+
+class ParkingTypeSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=ParkingType.choices)
+    checked = serializers.BooleanField()
+
+
+class HotelParkingSituationSerializer(BaseHotelParkingSituationSerializer):
+    parking_types = ParkingTypeSerializer(many=True)
+
+
+class HotelRulesSerializer(BaseHotelRulesSerializer):
+    cancellation_policies = HotelCancellationPolicySerializer(many=True)
+    prepayment_policies = HotelPrepaymentPolicySerializer(many=True)
+
+
+class GetHotelInfoForUpdateSerializer(serializers.Serializer):
+    hotel_info = HotelInfoSerializer()
+    hotel_rules = HotelRulesSerializer()
+    parking = HotelParkingSituationSerializer()
+
 
 class UpdateHotelInfoSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
@@ -362,8 +457,8 @@ class UpdateHotelInfoSerializer(serializers.Serializer):
 
 class UpdateHotelRequestSerializer(serializers.Serializer):
     hotel_info = UpdateHotelInfoSerializer()
-    hotel_rules = HotelRulesSerializer()
-    parking = HotelParkingSituationSerializer()
+    hotel_rules = CreateHotelRulesSerializer()
+    parking = CreateHotelParkingSituationSerializer()
     removed_images_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
 
 
@@ -466,3 +561,8 @@ class UpdateRoomTypeFormSerializer(serializers.Serializer):
         if not update_request.is_valid():
             raise serializers.ValidationError(update_request.errors)
         return data
+
+
+class HotelEditInfoDtoSerializer(DataclassSerializer):
+    class Meta:
+        dataclass = HotelEditInfoDTO

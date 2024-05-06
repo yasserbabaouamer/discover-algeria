@@ -94,18 +94,73 @@ class HotelDashboardInfoDto:
     room_types: List[HotelDashboardRoomTypeDto]
     reviews: List[GuestReview]
 
-# @dataclass
-# class HotelItemDto:
-#     id: int
-#     name: str
-#     stars: int
-#     address: str
-#     website: str
-#     business_email: str
-#     nb_rooms: int
-#     nb_occupied_rooms: int
-#     nb_reservations: int
-#     nb_check_ins: int
-#     nb_cancellations: int
-#     revenue: int
-#     facilities: List[AmenityDTO]
+
+@dataclass
+class CountryCodeDTO:
+    id: int
+    name: str
+    country_code: int
+
+
+@dataclass
+class CityDTO:
+    id: int
+    name: str
+
+
+@dataclass
+class FacilityDTO(AmenityDTO):
+    checked: bool
+
+
+@dataclass
+class StaffLanguageDTO:
+    id: int
+    language: str
+    checked: bool
+
+
+@dataclass
+class HotelInfoDTO:
+    current_country_code: str
+    country_codes: List[CountryCodeDTO]
+    cities: List[CityDTO]
+    facilities: List[FacilityDTO]
+    staff_languages: List[StaffLanguageDTO]
+
+
+@dataclass
+class HotelCancellationPolicyDTO:
+    policy: str
+    checked: bool
+
+
+@dataclass
+class HotelPrepaymentPolicyDTO:
+    policy: str
+    checked: bool
+
+
+@dataclass
+class ParkingTypeDTO:
+    type: str
+    checked: bool
+
+
+@dataclass
+class HotelParkingSituationDTO:
+    parking_types: List[ParkingTypeDTO]
+
+
+@dataclass
+class HotelRulesDTO:
+    # Define fields for HotelRulesDTO
+    cancellation_policies: List[HotelCancellationPolicyDTO]
+    prepayment_policies: List[HotelPrepaymentPolicyDTO]
+
+
+@dataclass
+class HotelEditInfoDTO:
+    hotel_info: HotelInfoDTO
+    hotel_rules: HotelRulesDTO
+    parking: HotelParkingSituationDTO

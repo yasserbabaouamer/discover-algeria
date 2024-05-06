@@ -96,6 +96,7 @@ class PasswordResetCodeManager(models.Manager):
 class PasswordResetCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.SET_NULL, related_name='password_reset', null=True)
     token = models.UUIDField(unique=True, max_length=100, null=True)
+    is_token_used = models.BooleanField(default=False)
     code = models.CharField(max_length=255)
     is_used = models.BooleanField(default=False)
     expires_at = models.DateTimeField()

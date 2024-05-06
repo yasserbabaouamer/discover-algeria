@@ -15,7 +15,9 @@ class RatingDTO:
 class HotelDTO:
     id: int
     name: str
-    rating: RatingDTO
+    reviews_count: int
+    rating_avg: float
+    cover_img: str
     images: List[str]
     starts_at: int
 
@@ -34,6 +36,7 @@ class CityDetailsDTO:
     id: int
     name: str
     description: str
+    cover_img: str
     images: List[str]
     hotels: List[HotelDTO]
     tours: List[TourDTO]

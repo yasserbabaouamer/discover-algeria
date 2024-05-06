@@ -6,6 +6,6 @@ APP_URL = 'destinations/'
 
 urlpatterns = [
     path(APP_URL + 'top/', TopDestinationsView.as_view()),
-    path(APP_URL + 'cities/', GetCityDetailsView.as_view()),
-    path(APP_URL + 'country-codes/', CountryCodeView.as_view()),
+    path(APP_URL + 'cities', GetCityDetailsView.as_view()),
+    path(APP_URL + 'countries/country-codes/', CountryCodeView.as_view()),
 ]

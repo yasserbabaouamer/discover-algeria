@@ -41,18 +41,43 @@ class AmenityCategory(models.Model):
         db_table = 'amenity_categories'
 
 
+class AmenityManager(models.Manager):
+
+    def find_amenities_by_hotel_id(self, hotel_id):
+        hotel = Hotel.objects.find_by_id(hotel_id)
+        return self.annotate(
+            checked=Case(
+                When(id__in=hotel.amenities.values_list('id', flat=True), then=True),
+                default=False
+            )
+        ).all()
+
+
 class Amenity(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
     icon = models.ImageField(upload_to='accommodations/amenities/', null=True)
     category = models.ForeignKey(AmenityCategory, related_name='amenities', on_delete=models.CASCADE)
+    objects = AmenityManager()
 
     class Meta:
         db_table = 'amenities'
 
 
+class LanguageManager(models.Manager):
+    def find_languages_by_hotel_id(self, hotel_id):
+        hotel = Hotel.objects.find_by_id(hotel_id)
+        return self.annotate(
+            checked=Case(
+                When(id__in=hotel.staff_languages.values_list('id', flat=True), then=True),
+                default=False
+            )
+        ).all()
+
+
 class Language(models.Model):
     name = models.CharField(max_length=255)
+    objects = LanguageManager()
 
     class Meta:
         db_table = 'languages'
@@ -337,7 +362,7 @@ class RoomType(models.Model):
     size = models.FloatField()  # Assuming size refers to area in square units
     number_of_guests = models.PositiveIntegerField()
     price_per_night = models.BigIntegerField()
-    cover_img = models.ImageField(upload_to='accommodations/hotels/', null=True)
+    cover_img = models.ImageField(upload_to='accommodations/room_types/', null=True)
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_types')
     amenities = models.ManyToManyField(Amenity, db_table='room_type_amenities')
     status = models.CharField(max_length=255, choices=RoomTypeStatus.choices, default=RoomTypeStatus.VISIBLE.name)

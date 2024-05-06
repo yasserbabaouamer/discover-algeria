@@ -6,12 +6,9 @@ from apps.touristicagencies.models import PeriodicTour
 
 class HotelDtoConverter:
     def convert_hotel_to_dto(self, hotel: Hotel) -> HotelDTO:
-        images = [hotel.cover_img.url]
-        for image in hotel.images.all():
-            images.append(image.img.url)
         return HotelDTO(
-            hotel.id, hotel.name, RatingDTO(hotel.number_of_reviews, hotel.avg_ratings),
-            images, hotel.starts_at
+            hotel.id, hotel.name, hotel.reviews_count, hotel.rating_avg, hotel.cover_img.url,
+            hotel.images.values_list('img', flat=True), hotel.starts_at
         )
 
     def convert_hotels_to_dtos_list(self, hotels) -> List[HotelDTO]:
@@ -36,11 +33,8 @@ class CityDtoConverter:
     def convert_city_to_dto(self, city: City) -> CityDetailsDTO:
         hotel_converter = HotelDtoConverter()
         tour_converter = TourDtoConverter()
-        images = [city.cover_img.url]
-        for image in city.images.all():
-            images.append(image.url)
         return CityDetailsDTO(
-            city.id, city.name, city.description, images,
+            city.id, city.name, city.description, city.cover_img.url, [image.url for image in city.images.all()],
             hotel_converter.convert_hotels_to_dtos_list(Hotel.objects.find_top_hotels_by_city_id(city.id)),
             tour_converter.convert_tours_to_dtos_list(PeriodicTour.objects.find_top_tours_by_city_id(city.id)),
         )
