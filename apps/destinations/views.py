@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
@@ -30,6 +30,13 @@ class GetCityDetailsView(APIView):
     authentication_classes = []
     permission_classes = []
 
+    @extend_schema(
+        tags=['Destinations'],
+        summary='Get city details',
+        responses={
+            200: OpenApiResponse(response=serializers.CityDetailsSerializer)
+        }
+    )
     def get(self, request):
         try:
             city_id = self.request.query_params['id']
@@ -45,3 +52,10 @@ class CountryCodeView(ListAPIView):
     permission_classes = []
     queryset = services.find_all_countries_codes()
     serializer_class = serializers.CountryCodeSerializer
+
+    @extend_schema(
+        tags=['Destinations'],
+        summary='Get country codes'
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)

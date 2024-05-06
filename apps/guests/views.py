@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from . import serializers
 from . import services
+from .dtos import GuestTokens
 from ..hotels.permissions import IsGuest
 
 
@@ -20,7 +21,7 @@ class LoginGuestView(APIView):
         summary='Login a guest',
         request=serializers.GuestLoginRequestSerializer,
         responses={
-            200: OpenApiResponse(response=serializers.TokensSerializer),
+            200: OpenApiResponse(response=serializers.GuestTokensSerializer),
             201: OpenApiResponse(description='Confirmation code sent to the user email'),
             400: OpenApiResponse(description='Invalid information')
         }
@@ -29,8 +30,8 @@ class LoginGuestView(APIView):
         login_request = serializers.GuestLoginRequestSerializer(data=self.request.data)
         if login_request.is_valid():
             result = services.authenticate_guest(login_request.validated_data)
-            if isinstance(result, dict):
-                tokens_serializer = serializers.TokensSerializer(result)
+            if isinstance(result, GuestTokens):
+                tokens_serializer = serializers.GuestTokensSerializer(result)
                 return Response(data=tokens_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(data={'detail': 'Confirmation code sent successfully'}, status=status.HTTP_201_CREATED)
@@ -68,7 +69,11 @@ class GetEssentialGuestInfo(APIView):
     permission_classes = []
 
     @extend_schema(
-        summary='Get Essential Guest Information'
+        tags=['Guests'],
+        summary='Get Essential Guest Information',
+        responses={
+            200: OpenApiResponse(response=serializers.EssentialGuestInfoSerializer)
+        }
     )
     def get(self, request, *args, **kwargs):
         guest_id = kwargs.pop('guest_id', None)
@@ -83,12 +88,14 @@ class ManageMyGuestProfile(APIView):
     permission_classes = [IsGuest]
 
     @extend_schema(
+        tags=['Guests'],
         summary='Get Guest Profile Information',
     )
     def get(self, request, *args, **kwargs):
         pass
 
     @extend_schema(
+        tags=['Guests'],
         summary='Update Profile Information'
     )
     def put(self, request, *args, **kwargs):

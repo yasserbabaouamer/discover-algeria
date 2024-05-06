@@ -7,11 +7,12 @@ from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
+from .dtos import GuestTokens
 from .models import Guest, User
 from apps.users.services import generate_and_send_confirmation_code
 
 
-def authenticate_guest(login_request: dict) -> dict | None:
+def authenticate_guest(login_request: dict) -> GuestTokens | None:
     user: User = authenticate(email=login_request['email'], password=login_request['password'])
     if user is not None:
         if user.is_active:
@@ -31,14 +32,13 @@ def generate_access_token(user: User):
     return access
 
 
-def generate_tokens_for_guest(user: User):
+def generate_tokens_for_guest(user: User) -> GuestTokens:
     refresh_token = RefreshToken.for_user(user)
-    tokens = {
-        'access': str(refresh_token.access_token),
-        'refresh': str(refresh_token),
-        'has_guest_acc': user.has_guest_account()
-    }
-    return tokens
+    return GuestTokens(
+        str(refresh_token.access_token),
+        str(refresh_token),
+        user.has_guest_account()
+    )
 
 
 def setup_guest_profile(user: User, profile_request: dict):

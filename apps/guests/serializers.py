@@ -1,5 +1,7 @@
 from rest_framework import serializers
+from rest_framework_dataclasses.serializers import DataclassSerializer
 
+from apps.guests.dtos import GuestTokens
 from apps.guests.models import Guest
 
 
@@ -20,10 +22,9 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'birthday', 'profile_pic']
 
 
-class TokensSerializer(serializers.Serializer):
-    access = serializers.CharField(max_length=255)
-    refresh = serializers.CharField(max_length=255)
-    has_guest_acc = serializers.BooleanField()
+class GuestTokensSerializer(DataclassSerializer):
+    class Meta:
+        dataclass = GuestTokens
 
 
 class EssentialGuestInfoSerializer(serializers.ModelSerializer):
