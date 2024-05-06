@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'decouple',
+    'corsheaders',
     # INTERNAL_PACKAGES
     'apps.cars',
     'apps.guests',
@@ -38,6 +39,8 @@ INSTALLED_APPS = [
     'apps.blogs',
 ]
 
+CORS_ALLOWED_ORIGINS = ['*']
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -46,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
