@@ -144,7 +144,6 @@ class FilterRequestSerializer(serializers.Serializer):
     # Add dynamically created fields to the serializers class
     amenity_fields = locals().copy()
     amenity_fields.pop('amenities')  # Remove the amenities queryset
-    amenity_fields.pop('amenity')  # Remove the amenities model
     locals().update(amenity_fields)
 
     print(locals())
