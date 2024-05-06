@@ -73,14 +73,17 @@ class GetHotelRoomTypes(APIView):
     @extend_schema(
         tags=['Hotels'],
         summary='Get The Room Types of a Specific Hotel',
+        parameters=[serializers.GetHotelAvailableRoomTypesParamsSerializer],
         responses={200: serializers.RoomTypeDtoSerializer}
     )
     def get(self, request, *args, **kwargs):
         hotel_id = kwargs.pop('hotel_id', None)
         if hotel_id is None:
             raise ValidationError({'detail': 'Provide a hotel id'})
-        room_types = services.get_room_types_by_hotel_id(hotel_id)
-        print(room_types)
+        request_params = serializers.GetHotelAvailableRoomTypesParamsSerializer(data=self.request.query_params)
+        if not request_params.is_valid():
+            raise ValidationError({'detail': 'Provide check_in & check_out params'})
+        room_types = services.get_room_types_by_hotel_id(hotel_id, request_params.validated_data)
         response = serializers.RoomTypeDtoSerializer(room_types, many=True)
         return Response(data=response.data, status=status.HTTP_200_OK)
 

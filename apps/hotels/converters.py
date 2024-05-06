@@ -23,7 +23,7 @@ class HotelDetailsDtoConverter:
             hotel.id, hotel.name, hotel.stars, f"{hotel.address} , {hotel.city.name} , {hotel.city.country.name}",
             hotel.starts_at, hotel.reviews_count, hotel.rating_avg, hotel.longitude, hotel.latitude,
             hotel.website_url, hotel.cover_img.url, hotel.about, hotel.business_email,
-            hotel.contact_number, hotel.amenities.all()
+            hotel.contact_number, hotel.amenities.all(), [image.url for image in hotel.images.all()]
         )
 
     def to_dtos_list(self, hotels) -> List[HotelDetailsDTO]:
@@ -34,9 +34,8 @@ class RoomTypeConverter:
 
     def to_dto(self, room_type: RoomType, check_in=None, check_out=None) -> RoomTypeDTO:
         return RoomTypeDTO(
-            room_type.id, room_type.name, room_type.size, room_type.nb_beds, room_type.main_bed_type,
-            room_type.price_per_night,
-            room_type.cover_img.path,
+            room_type.id, room_type.name, room_type.size, room_type.cover_img.url,
+            room_type.beds.all(), room_type.price_per_night,
             Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out).count()
             if check_in is not None and check_out is not None else None,
             RoomType.objects.get_categories_and_amenities(room_type.id)

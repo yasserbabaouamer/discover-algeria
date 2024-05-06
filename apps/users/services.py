@@ -30,7 +30,10 @@ def register_new_user(signup_request: dict):
     email = signup_request['email']
     if is_email_already_exists(email):
         raise ValidationError(detail={'msg': 'This email is already exists'})
-    password_validation.validate_password(signup_request['password'])
+    try:
+        password_validation.validate_password(signup_request['password'])
+    except Exception as e:
+        raise ValidationError({'detail': e})
     with transaction.atomic():
         user = User.objects.create_user(
             signup_request['email'],
@@ -153,7 +156,10 @@ def update_password(complete_request: dict):
     if password_reset.is_token_used:
         raise ValidationError({'detail': 'This token has been used'})
     user = password_reset.user
-    password_validation.validate_password(complete_request['new_password'])
+    try:
+        password_validation.validate_password(complete_request['new_password'])
+    except Exception as e:
+        raise ValidationError({'detail': e})
     user.set_password(complete_request['new_password'])
     password_reset.is_token_used = True
     user.save()

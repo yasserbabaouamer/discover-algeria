@@ -27,15 +27,14 @@ def find_top_hotels() -> QuerySet:
 
 def get_hotel_details_by_id(hotel_id: int):
     hotel = Hotel.objects.find_by_id(hotel_id)
-    if hotel is not None:
-        hotel_dto = hotel_converter.to_dto(hotel)
-        return hotel_dto
-    return None
+    hotel_dto = hotel_converter.to_dto(hotel)
+    return hotel_dto
 
 
-def get_room_types_by_hotel_id(hotel_id: int):
-    hotel = Hotel.objects.find_by_id(hotel_id)
-    room_types_dto = room_type_converter.to_dtos_list(hotel.room_types.all())
+
+def get_room_types_by_hotel_id(hotel_id: int, dates: dict):
+    room_types = RoomType.objects.find_available_room_types_by_hotel_id(hotel_id, dates['check_in'], dates['check_out'])
+    room_types_dto = room_type_converter.to_dtos_list(room_types)
     return room_types_dto
 
 

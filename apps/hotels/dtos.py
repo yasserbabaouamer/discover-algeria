@@ -3,7 +3,7 @@ import typing
 from dataclasses import dataclass
 from typing import List
 
-from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview
+from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview, RoomTypeBed
 
 
 @dataclass
@@ -27,10 +27,9 @@ class RoomTypeDTO:
     id: int
     name: str
     size: float
-    nb_beds: int
-    main_bed_type: BedType
-    price_per_night: int
     cover_img: str
+    beds: List[RoomTypeBed]
+    price_per_night: int
     nb_available_rooms: int
     categories: dict
 
@@ -52,6 +51,7 @@ class HotelDetailsDTO:
     business_email: str
     contact_number: str
     amenities: typing.List[AmenityDTO]
+    images: List[str]
 
 
 @dataclass

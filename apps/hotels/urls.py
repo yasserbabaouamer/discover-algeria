@@ -8,7 +8,7 @@ urlpatterns = [
     path(APP_URL + 'top/', GetTopHotelsView.as_view()),
     path(APP_URL + '<int:hotel_id>/', GetHotelDetailsView.as_view()),
     path(APP_URL + '<int:hotel_id>/reviews/', ListCreateHotelReviewView.as_view()),
-    path(APP_URL + '<int:hotel_id>/rooms/', GetHotelRoomTypes.as_view()),
+    path(APP_URL + '<int:hotel_id>/rooms', GetHotelRoomTypes.as_view()),
     path(APP_URL + 'reserve/', CreateReservationView.as_view()),
     path('cities/<int:city_id>/hotels', SearchHotelsByCity.as_view()),
     path(APP_URL + 'amenities/', GetAllAmenities.as_view()),

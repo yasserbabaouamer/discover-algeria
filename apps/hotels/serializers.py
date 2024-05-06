@@ -21,7 +21,6 @@ class HotelSerializer(serializers.ModelSerializer):
     rating = serializers.FloatField()
     starts_at = serializers.IntegerField()
     average = serializers.FloatField()
-    cover_img = HotelImageSerializer(many=True)
 
     class Meta:
         model = Hotel
@@ -111,19 +110,34 @@ class BedTypeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class RoomTypeBedSerializer(serializers.ModelSerializer):
+    bed_type = serializers.SerializerMethodField()
+    icon = serializers.SerializerMethodField()
+
+    def get_bed_type(self, room_type_bed: RoomTypeBed):
+        return room_type_bed.bed_type.name
+
+    def get_icon(self, room_type_bed: RoomTypeBed):
+        return room_type_bed.bed_type.icon.url
+
+    class Meta:
+        model = RoomTypeBed
+        fields = ['bed_type', 'quantity', 'icon']
+
+
 class RoomTypeDtoSerializer(DataclassSerializer):
     categories = AmenityCategorySerializer(many=True)
-    beds = BedTypeSerializer(many=True)
+    beds = RoomTypeBedSerializer(many=True)
 
     class Meta:
         dataclass = RoomTypeDTO
-        fields = ["id", "name", "size", "nb_beds", "price_per_night", "cover_img",
+        fields = ["id", "name", "size", "price_per_night", "cover_img",
                   "nb_available_rooms", "beds", "categories"]
 
 
-class GetHotelAvailableRoomTypesRequestSerializer(serializers.Serializer):
-    check_in = serializers.DateField(required=False)
-    check_out = serializers.DateField(required=False)
+class GetHotelAvailableRoomTypesParamsSerializer(serializers.Serializer):
+    check_in = serializers.DateField()
+    check_out = serializers.DateField()
 
 
 class FilterRequestSerializer(serializers.Serializer):

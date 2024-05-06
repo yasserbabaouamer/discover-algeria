@@ -355,6 +355,15 @@ class RoomTypeManager(models.Manager):
             room_type.categories = self.get_categories_and_amenities(room_type.id)
         return room_types
 
+    def find_available_room_types_by_hotel_id(self, hotel_id, check_in, check_out):
+        hotel = Hotel.objects.find_by_id(hotel_id)
+        available_room_types = []
+        for room_type in hotel.room_types.all():
+            available_rooms = Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out)
+            if available_rooms.count() > 0:
+                available_room_types.append(room_type)
+        return available_room_types
+
 
 class RoomType(models.Model):
     id = models.AutoField(primary_key=True)  # Automatically generated unique identifier
