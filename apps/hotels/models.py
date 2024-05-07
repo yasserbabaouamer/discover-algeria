@@ -295,7 +295,7 @@ class ParkingSituation(models.Model):
 
 class BedType(models.Model):
     name = models.CharField(max_length=50)
-    icon = models.ImageField(upload_to='accommodations/hotels/bed_types/', null=True)
+    icon = models.ImageField(upload_to='accommodations/bed_types/', null=True)
     length = models.IntegerField(null=True)
     width = models.IntegerField(null=True)
 

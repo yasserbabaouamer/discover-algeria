@@ -46,7 +46,7 @@ def setup_guest_profile(user: User, profile_request: dict):
         user=user, defaults={
             'first_name': profile_request['first_name'],
             'last_name': profile_request['last_name'],
-            'profile_pic': profile_request.get('profile_pic', 'users/default_profile_pic.png')
+            'profile_pic': profile_request.get('profile_pic', 'users/defaults/default_profile_pic.png')
         }
     )
     return created

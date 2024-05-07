@@ -1,6 +1,7 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from . import serializers, services
@@ -37,18 +38,19 @@ class LoginOwnerView(APIView):
 
 
 class SetupOwnerProfileView(APIView):
+    parser_classes = [MultiPartParser, JSONParser]
 
     @extend_schema(
         tags=['Owner'],
         summary='Quick setup for owner profile',
-        request=serializers.SetupOwnerProfileRequestSerializer,
+        request=serializers.SetupOwnerProfileFormSerializer,
         responses={
             201: OpenApiResponse(description='Profile has been created successfully'),
             400: OpenApiResponse(description='Invalid information')
         }
     )
     def post(self, _request, *args, **kwargs):
-        request_body = serializers.SetupOwnerProfileRequestSerializer(data=self.request.data)
+        request_body = serializers.SetupOwnerProfileFormSerializer(data=self.request.data)
         if request_body.is_valid():
             services.setup_owner_profile(self.request.user, request_body.validated_data)
             return Response({'details': "Your account has been created successfully"}

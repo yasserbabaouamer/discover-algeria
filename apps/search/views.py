@@ -43,5 +43,7 @@ class QuickSearchView(APIView):
             result = services.do_quick_search_hotels(keyword)[:10]
         elif search_type == SearchType.TOURS:
             result = services.do_quick_search_tours(keyword)[:10]
+        elif search_type == SearchType.DESTINATIONS:
+            result = services.do_quick_search_cities(keyword)[:10]
         response = serializers.SearchItemSerializer(result, many=True)
         return Response(data=response.data, status=status.HTTP_200_OK)

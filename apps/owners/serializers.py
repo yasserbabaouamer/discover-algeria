@@ -17,13 +17,14 @@ class OwnerTokensSerializer(DataclassSerializer):
         dataclass = OwnerTokens
 
 
-class SetupOwnerProfileRequestSerializer(serializers.Serializer):
+class SetupOwnerProfileFormSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=255)
     last_name = serializers.CharField(max_length=255)
     birthday = serializers.DateField()
     country_code_id = serializers.IntegerField()
     phone = serializers.IntegerField(validators=[RegexValidator(regex="^\d{7,15}$")])
     country_id = serializers.IntegerField()
+    profile_pic = serializers.ImageField(required=False)
 
     def validate(self, data):
         if datetime.date.today() < data['birthday']:

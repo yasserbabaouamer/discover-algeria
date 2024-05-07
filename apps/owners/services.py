@@ -44,4 +44,5 @@ def setup_owner_profile(user: User, data: dict):
         country_code=Country.objects.find_by_id(data['country_code_id']),
         phone=data['phone'],
         country=Country.objects.find_by_id(data['country_id']),
+        profile_pic=data.get('cover_img', 'users/defaults/default_profile_pic.png'),
     )

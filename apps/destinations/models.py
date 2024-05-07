@@ -73,7 +73,7 @@ class City(models.Model):
 
 class CityImage(models.Model):
     city = models.ForeignKey(City, related_name='images', on_delete=models.SET_NULL, null=True)
-    image = models.ImageField(upload_to='destinations/')
+    image = models.ImageField(upload_to='destinations/cities/')
 
     class Meta:
         db_table = 'city_images'

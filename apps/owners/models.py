@@ -28,7 +28,7 @@ class Owner(models.Model):
     country_code = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
     phone = models.PositiveIntegerField(validators=[RegexValidator(regex="^\d{7,15}$")])
     country = models.ForeignKey(Country, related_name='owners', on_delete=models.CASCADE, null=True)
-    profile_pic = models.ImageField(upload_to='hotels/', null=True)
+    profile_pic = models.ImageField(upload_to='owners/', null=True)
     preferred_currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.DZD.value)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
