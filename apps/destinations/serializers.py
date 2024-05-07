@@ -26,4 +26,4 @@ class CityDetailsSerializer(DataclassSerializer):
 class CountryCodeSerializer(ModelSerializer):
     class Meta:
         model = models.Country
-        fields = ['id', 'country_code', 'flag']
+        fields = ['id', 'name', 'country_code', 'flag']

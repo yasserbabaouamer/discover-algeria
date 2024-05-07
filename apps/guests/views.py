@@ -65,21 +65,18 @@ class SetupGuestProfileForExistingUser(APIView):
 
 
 class GetEssentialGuestInfo(APIView):
-    authentication_classes = []
-    permission_classes = []
+    permission_classes = [IsGuest]
 
     @extend_schema(
         tags=['Guests'],
         summary='Get Essential Guest Information',
         responses={
-            200: OpenApiResponse(response=serializers.EssentialGuestInfoSerializer)
+            200: OpenApiResponse(response=serializers.EssentialGuestInfoSerializer),
+            403: OpenApiResponse(description="You don't have the permission because you don't have a guest account")
         }
     )
     def get(self, request, *args, **kwargs):
-        guest_id = kwargs.pop('guest_id', None)
-        if guest_id is None:
-            raise ValidationError({'detail': 'Provide a guest_id'})
-        guest = services.find_guest_by_id(guest_id)
+        guest = services.find_guest_by_id(self.request.user.guest)
         response = serializers.EssentialGuestInfoSerializer(guest)
         return Response(response.data, status=status.HTTP_200_OK)
 

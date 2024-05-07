@@ -17,4 +17,4 @@ def get_city_details_by_id(city_id: int) -> CityDetailsDTO:
 
 
 def find_all_countries_codes():
-    return Country.objects.all()
+    return list(Country.objects.all())

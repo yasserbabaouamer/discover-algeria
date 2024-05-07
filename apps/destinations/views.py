@@ -47,15 +47,15 @@ class GetCityDetailsView(APIView):
             raise ValidationError({'detail': 'Provide a city id'})
 
 
-class CountryCodeView(ListAPIView):
+class CountryCodeView(APIView):
     authentication_classes = []
     permission_classes = []
-    queryset = services.find_all_countries_codes()
-    serializer_class = serializers.CountryCodeSerializer
 
     @extend_schema(
         tags=['Destinations'],
         summary='Get country codes'
     )
     def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+        queryset = services.find_all_countries_codes()
+        response = serializers.CountryCodeSerializer(queryset, many=True)
+        return Response(data=response.data, status=status.HTTP_200_OK)
