@@ -87,8 +87,8 @@ def activate_user(confirmation_request: dict):
             user.activation.save()
             refresh = RefreshToken.for_user(user)
             return {
-                'access': refresh.access_token.token,
-                'refresh': refresh.token
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
             }
     else:
         raise ValidationError({'detail': 'Invalid confirmation code'})
