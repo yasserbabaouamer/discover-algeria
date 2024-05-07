@@ -57,7 +57,7 @@ class CityManager(models.Manager):
     def find_top_cities(self):
         return self.annotate(
             reservations_count=Count('hotels__reservations')
-        ).order_by('-reservations_count').all()[:5]
+        ).order_by('-reservations_count').all()[:7]
 
 
 class City(models.Model):

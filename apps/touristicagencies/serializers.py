@@ -3,9 +3,12 @@ from .models import PeriodicTour
 
 
 class TourSerializer(rest_serializers.ModelSerializer):
+    rating_avg = rest_serializers.IntegerField()
+    reviews_count = rest_serializers.IntegerField()
+
     class Meta:
         model = PeriodicTour
-        fields = ['id', 'title', 'description', 'price']
+        fields = ['id', 'title', 'description', 'price', 'cover_img', 'rating_avg', 'reviews_count']
 
 
 class FilterToursRequestSerializer(rest_serializers.Serializer):

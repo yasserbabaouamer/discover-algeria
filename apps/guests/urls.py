@@ -2,9 +2,11 @@ from django.urls import path
 
 from .views import *
 
+APP_URL = 'guest/'
+
 urlpatterns = [
-    path('guests/login/', LoginGuestView.as_view()),
-    path('guests/setup-profile/', SetupGuestProfileForExistingUser.as_view()),
-    path('guests/<int:guest_id>/profile/', ManageMyGuestProfile.as_view()),
-    path('guests/<int:guest_id>/essential-info/', GetEssentialGuestInfo.as_view()),
+    path(APP_URL + 'login/', LoginGuestView.as_view()),
+    path(APP_URL + 'setup-profile/', SetupGuestProfileForExistingUser.as_view()),
+    path(APP_URL + '<int:guest_id>/profile/', ManageMyGuestProfile.as_view()),
+    path(APP_URL + '<int:guest_id>/essential-info/', GetEssentialGuestInfo.as_view()),
 ]

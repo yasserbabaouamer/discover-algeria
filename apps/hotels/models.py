@@ -98,10 +98,10 @@ class HotelManager(models.Manager):
         return self.annotate(
             reservations_count=create_coalesce(reservations_subquery.values('reservations_count')[:1]),
             revenue=create_coalesce(reservations_subquery.values('revenue')[:1]),
-            rating=create_coalesce(reviews.values('rating_avg')[:1]),
+            rating_avg=create_coalesce(reviews.values('rating_avg')[:1]),
             reviews_count=create_coalesce(reviews.values('reviews_count')[:1]),
             starts_at=create_coalesce(room_type_subquery.values('starts_at')[:1]),
-            average=ExpressionWrapper(F('rating') * self.w1 + F('reviews_count') * self.w2 +
+            average=ExpressionWrapper(F('rating_avg') * self.w1 + F('reviews_count') * self.w2 +
                                       F('reservations_count') * self.w3 + F('revenue') * self.w4,
                                       output_field=models.FloatField())
         ).order_by('-average').all()

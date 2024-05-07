@@ -65,7 +65,9 @@ class ConfirmationView(APIView):
         summary='Account confirmation',
         description='Post the confirmation code with the user email',
         request=serializers.ConfirmationCodeRequestSerializer,
-        responses={200: TokensSerializer}
+        responses={
+            200: TokensSerializer
+        }
     )
     def post(self, request):
         confirmation_request = serializers.ConfirmationCodeRequestSerializer(data=self.request.data)

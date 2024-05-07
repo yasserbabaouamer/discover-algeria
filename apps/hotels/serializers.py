@@ -17,14 +17,15 @@ class HotelImageSerializer(serializers.ModelSerializer):
 
 
 class HotelSerializer(serializers.ModelSerializer):
-    reservations_count = serializers.IntegerField()
-    rating = serializers.FloatField()
+    reviews_count = serializers.IntegerField()
+    rating_avg = serializers.FloatField()
     starts_at = serializers.IntegerField()
     average = serializers.FloatField()
 
     class Meta:
         model = Hotel
-        fields = ['id', 'name', 'stars', 'average', 'cover_img', 'starts_at', 'reservations_count', 'rating', 'images']
+        fields = ['id', 'name', 'stars', 'average',
+                  'cover_img', 'starts_at', 'reviews_count', 'rating_avg', 'images']
 
 
 class RoomTypeSerializer(serializers.ModelSerializer):

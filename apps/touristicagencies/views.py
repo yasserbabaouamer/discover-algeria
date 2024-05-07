@@ -2,16 +2,16 @@ from drf_spectacular.utils import extend_schema
 from jsonschema.exceptions import ValidationError
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import services, serializers
+from .models import PeriodicTour
 
 
-class GetTopTours(ListAPIView):
+class GetTopTours(APIView):
     authentication_classes = []
     permission_classes = []
-    queryset = services.get_top_tours()
-    serializer_class = serializers.TourSerializer
 
     @extend_schema(
         tags=['Touristic Agencies'],
@@ -19,7 +19,8 @@ class GetTopTours(ListAPIView):
         responses=serializers.TourSerializer
     )
     def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+        response = serializers.TourSerializer(services.get_top_tours(), many=True)
+        return Response(response.data)
 
 
 class GetCityTours(APIView):

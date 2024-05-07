@@ -1,6 +1,8 @@
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import Q, Func, F, BigIntegerField, FloatField, Value, CheckConstraint, Count, Avg, Case, When
+from django.db.models import Q, Func, F, BigIntegerField, FloatField, Value, CheckConstraint, Count, Avg, Case, When, \
+    Sum
+from django.db.models.functions import Coalesce
 from django.utils.dates import WEEKDAYS
 
 from apps.users.models import User
@@ -34,7 +36,7 @@ class TouristicAgency(models.Model):
     address = models.CharField(max_length=300, null=True)
     city = models.ForeignKey(City, related_name='touristic_agencies', on_delete=models.SET_NULL, null=True)
     website_url = models.URLField(null=True)
-    cover_img = models.ImageField(null=True)
+    cover_img = models.ImageField(null=True, upload_to='tourism_agencies/agencies/')
     objects = TouristicAgencyManager()
 
     class Meta:
@@ -53,10 +55,15 @@ class Guide(models.Model):
         db_table = 'guides'
 
 
-class TourManager(models.Manager):
+class PeriodicTourManager(models.Manager):
 
     def find_top_tours(self):
-        return self.all()[:5]
+        return list(self.annotate(
+            reviews_count=Coalesce(Sum('scheduled_tours__registrations__review'), Value(0),
+                                   output_field=models.IntegerField()),
+            rating_avg=Coalesce(Sum('scheduled_tours__registrations__review__rating'), Value(0),
+                                output_field=models.IntegerField()),
+        ).all()[:8])
 
     def find_by_keyword(self, keyword: str):
         return self.annotate(
@@ -92,7 +99,7 @@ class PeriodicTour(models.Model):
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, related_name='periodic_tours')
     title = models.CharField(max_length=255)
     description = models.TextField(max_length=500)
-    cover_img = models.ImageField(null=True)
+    cover_img = models.ImageField(null=True, upload_to='tourism_agencies/periodic_tours/')
     start_day = models.CharField(max_length=255, choices=list(WEEKDAYS.items()))
     start_time = models.TimeField()
     end_day = models.CharField(max_length=255, choices=list(WEEKDAYS.items()))
@@ -101,7 +108,7 @@ class PeriodicTour(models.Model):
     tour_status = models.CharField(max_length=25, choices=TourStatus.choices)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    objects = TourManager()
+    objects = PeriodicTourManager()
 
     class Meta:
         db_table = 'periodic_tours'
