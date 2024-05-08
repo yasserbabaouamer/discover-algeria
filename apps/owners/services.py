@@ -2,6 +2,7 @@ from threading import Thread
 
 from django.contrib.auth import authenticate
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -46,3 +47,7 @@ def setup_owner_profile(user: User, data: dict):
         country=Country.objects.find_by_id(data['country_id']),
         profile_pic=data.get('cover_img', 'users/defaults/default_profile_pic.png'),
     )
+
+
+def find_owner_essentials_info(_id):
+    return get_object_or_404(Owner, pk=_id)

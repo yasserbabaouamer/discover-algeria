@@ -28,6 +28,11 @@ class GuestTokensSerializer(DataclassSerializer):
 
 
 class EssentialGuestInfoSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField()
+
+    def get_email(self, guest: Guest):
+        return guest.user.email
+
     class Meta:
         model = Guest
-        fields = ['id', 'first_name', 'last_name', 'profile_pic']
+        fields = ['id', 'first_name', 'last_name', 'profile_pic', 'email']

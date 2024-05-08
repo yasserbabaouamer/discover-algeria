@@ -361,7 +361,8 @@ class RoomTypeManager(models.Manager):
         room_types = self.filter(hotel_id=hotel_id).all()
         available_room_types = []
         for room_type in room_types:
-            room_type.available_rooms_count = len(Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out))
+            room_type.available_rooms_count = len(
+                Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out))
             print(
                 f"{room_type.name} : {room_type.available_rooms_count}")
             if room_type.available_rooms_count > 0:
@@ -568,7 +569,7 @@ class GuestReviewManager(models.Manager):
         return self.annotate(
             number_of_reviews=Count('id'),
             avg_ratings=Avg('rating')
-        ).filter(reservation__hotel_id=hotel_id).all()
+        ).filter(reservation__hotel_id=hotel_id).prefetch_related('reservation__guest').all()
 
     def get_hotel_reviews_subquery(self):
         return GuestReview.objects.filter(

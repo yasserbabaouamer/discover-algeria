@@ -8,7 +8,11 @@ class ReviewDtoConverter:
 
     def to_dto(self, review: GuestReview) -> ReviewDTO:
         return ReviewDTO(
-            review.id, review.title, review.content, review.rating, review.created_at
+            review.id, f"{review.reservation.guest.first_name} "
+                       f"{review.reservation.guest.last_name}",
+            review.reservation.guest.profile_pic.url,
+            review.title, review.content, review.rating,
+            review.created_at
         )
 
     def to_dtos_list(self, reviews) -> List[ReviewDTO]:

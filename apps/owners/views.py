@@ -58,6 +58,15 @@ class SetupOwnerProfileView(APIView):
         raise ValidationError(detail=request_body.errors)
 
 
+class GetOwnerEssentials(APIView):
+    permission_classes = [IsProfileOwner]
+
+    def get(self, request, *args, **kwargs):
+        owner_info = services.find_owner_essentials_info(request.user.owner.id)
+        self.check_object_permissions(request, owner_info)
+        return Response(serializers.OwnerEssentialsInfo(owner_info).data)
+
+
 class ManageProfileView(APIView):
     permission_classes = [IsProfileOwner]
 

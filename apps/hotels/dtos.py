@@ -9,6 +9,8 @@ from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview, R
 @dataclass
 class ReviewDTO:
     id: int
+    username: str
+    profile_pic: str
     title: str
     content: str
     rating: int
