@@ -37,7 +37,7 @@ def setup_owner_profile(user: User, data: dict):
     if user.has_owner_account():
         raise ValidationError(
             {'detail': 'You have already set your owner account, go to your profile settings and edit'})
-    owner = Owner.objects.create_owner(
+    owner = Owner.objects.create(
         user=user,
         first_name=data['first_name'],
         last_name=data['last_name'],
@@ -45,7 +45,7 @@ def setup_owner_profile(user: User, data: dict):
         country_code=Country.objects.find_by_id(data['country_code_id']),
         phone=data['phone'],
         country=Country.objects.find_by_id(data['country_id']),
-        profile_pic=data.get('cover_img', 'users/defaults/default_profile_pic.png'),
+        profile_pic=data.get('profile_pic', 'users/defaults/default_profile_pic.png'),
     )
 
 

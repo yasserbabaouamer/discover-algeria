@@ -71,5 +71,5 @@ class RoomTypeCancellationPolicy(models.TextChoices):
 
 
 class RoomTypePrepaymentPolicy(models.TextChoices):
-    NOT_REQUIRED = 'Not Required'
-    REQUIRED = 'Required'
+    NOT_REQUIRED = 'Prepayment is not required'
+    REQUIRED = 'Prepayment is required'

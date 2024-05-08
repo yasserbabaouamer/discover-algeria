@@ -126,13 +126,19 @@ class RoomTypeBedSerializer(serializers.ModelSerializer):
         fields = ['bed_type', 'quantity', 'icon']
 
 
+class RoomTypePolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoomTypePolicies
+        fields = '__all__'
+
+
 class RoomTypeDtoSerializer(DataclassSerializer):
     beds = RoomTypeBedSerializer(many=True)
-
+    policies = RoomTypePolicySerializer()
     class Meta:
         dataclass = RoomTypeDTO
         fields = ["id", "name", "size", "price_per_night", "cover_img", "number_of_guests",
-                  "available_rooms_count", "beds", "categories"]
+                  "available_rooms_count", "beds", "categories", "policies"]
 
 
 class GetHotelAvailableRoomTypesParamsSerializer(serializers.Serializer):

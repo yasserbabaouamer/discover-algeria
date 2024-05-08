@@ -3,7 +3,7 @@ import typing
 from dataclasses import dataclass
 from typing import List
 
-from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview, RoomTypeBed
+from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview, RoomTypeBed, RoomTypePolicies
 
 
 @dataclass
@@ -42,6 +42,7 @@ class RoomTypeDTO:
     number_of_guests: int
     available_rooms_count: int
     categories: List[BaseAmenityCategory]
+    policies: RoomTypePolicies
 
 
 @dataclass

@@ -30,7 +30,7 @@ class HotelDetailsDtoConverter:
                 hotel.owner.first_name,
                 hotel.owner.last_name,
                 hotel.owner.profile_pic.url
-            ), hotel.amenities.all(), [image.url for image in hotel.images.all()]
+            ), hotel.amenities.all(), [image.img.url for image in hotel.images.all()]
         )
 
     def to_dtos_list(self, hotels) -> List[HotelDetailsDTO]:
@@ -41,7 +41,7 @@ class BaseAmenityCategoryConverter:
     def to_dto(self, category, amenities) -> BaseAmenityCategory:
         return BaseAmenityCategory(
             category.id, category.name,
-            [AmenityDTO(amenity.id, amenity.name, amenity.icon) for amenity in amenities]
+            [AmenityDTO(amenity.id, amenity.name, amenity.icon.url) for amenity in amenities]
         )
 
 
@@ -56,7 +56,8 @@ class RoomTypeConverter:
             room_type.number_of_guests,
             room_type.available_rooms_count,
             [self.amenity_category_converter.to_dto(category, amenities) for category, amenities in
-             categories_dict.items()]
+             categories_dict.items()],
+            room_type.policies
         )
 
     def to_dtos_list(self, room_types: List[RoomType]) -> List[RoomTypeDTO]:
