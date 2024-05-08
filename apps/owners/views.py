@@ -46,7 +46,8 @@ class SetupOwnerProfileView(APIView):
         request=serializers.SetupOwnerProfileFormSerializer,
         responses={
             201: OpenApiResponse(description='Profile has been created successfully'),
-            400: OpenApiResponse(description='Invalid information')
+            400: OpenApiResponse(description='Invalid information'),
+            409: OpenApiResponse(description='You have already an owner account'),
         }
     )
     def post(self, _request, *args, **kwargs):

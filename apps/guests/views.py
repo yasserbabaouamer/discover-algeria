@@ -6,6 +6,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.utils import CustomException
 from . import serializers
 from . import services
 from .dtos import GuestTokens
@@ -48,7 +49,8 @@ class SetupGuestProfileForExistingUser(APIView):
         request=serializers.QuickProfileRequestSerializer,
         responses={
             201: OpenApiResponse(description='Your account has been created successfully'),
-            400: OpenApiResponse(description='Invalid information')
+            400: OpenApiResponse(description='Invalid information'),
+            409: OpenApiResponse(description='You have already a guest account'),
         }
     )
     def post(self, request):
@@ -60,7 +62,8 @@ class SetupGuestProfileForExistingUser(APIView):
                 return Response(data={'detail': 'Your profile has been created successfully'},
                                 status=status.HTTP_201_CREATED)
             else:
-                raise ValidationError({'detail': 'You have already an existing profile *__*'})
+                raise CustomException({'detail': 'You have already an existing profile *__*'},
+                                      status=status.HTTP_409_CONFLICT)
         raise ValidationError(profile_request.errors)
 
 
