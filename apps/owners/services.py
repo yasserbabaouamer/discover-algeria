@@ -3,11 +3,13 @@ from threading import Thread
 from django.contrib.auth import authenticate
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from rest_framework.exceptions import AuthenticationFailed, ValidationError
+from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed, ValidationError, APIException
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import User
 from apps.users.services import generate_and_send_confirmation_code
+from core.utils import CustomException
 from .dtos import *
 from .models import Owner
 from ..destinations.models import Country
@@ -35,8 +37,9 @@ def generate_tokens_for_owner(user: User) -> OwnerTokens:
 
 def setup_owner_profile(user: User, data: dict):
     if user.has_owner_account():
-        raise ValidationError(
-            {'detail': 'You have already set your owner account, go to your profile settings and edit'})
+        raise CustomException(
+            {'detail': 'You have already set your owner account, go to your profile settings and edit'},
+            status.HTTP_409_CONFLICT)
     owner = Owner.objects.create(
         user=user,
         first_name=data['first_name'],
