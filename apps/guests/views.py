@@ -76,7 +76,7 @@ class GetEssentialGuestInfo(APIView):
         }
     )
     def get(self, request, *args, **kwargs):
-        guest = services.find_guest_by_id(self.request.user.guest)
+        guest = services.find_guest_by_id(self.request.user.guest.id)
         response = serializers.EssentialGuestInfoSerializer(guest)
         return Response(response.data, status=status.HTTP_200_OK)
 

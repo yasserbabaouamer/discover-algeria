@@ -8,9 +8,9 @@ def get_top_tours():
 
 
 def find_available_tours(city_id: int, filter_request: dict):
-    current_day: date = filter_request['start_day']
+    current_day: date = filter_request['check_in']
     days = {}
-    while current_day <= filter_request['end_day']:
+    while current_day <= filter_request['check_out']:
         weekday = current_day.today().strftime('%A')
         if weekday not in days:
             days[weekday] = [current_day]

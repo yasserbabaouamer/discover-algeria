@@ -16,29 +16,43 @@ class ReviewDtoConverter:
 
 
 class HotelDetailsDtoConverter:
-    review_converter = ReviewDtoConverter()
 
     def to_dto(self, hotel: Hotel) -> HotelDetailsDTO:
         return HotelDetailsDTO(
-            hotel.id, hotel.name, hotel.stars, f"{hotel.address} , {hotel.city.name} , {hotel.city.country.name}",
+            hotel.id, hotel.name, hotel.stars, f"{hotel.address}, {hotel.city.name}, {hotel.city.country.name}",
             hotel.starts_at, hotel.reviews_count, hotel.rating_avg, hotel.longitude, hotel.latitude,
             hotel.website_url, hotel.cover_img.url, hotel.about, hotel.business_email,
-            hotel.contact_number, hotel.amenities.all(), [image.url for image in hotel.images.all()]
+            hotel.contact_number, OwnerEssentialInfoDTO(
+                hotel.owner.first_name,
+                hotel.owner.last_name,
+                hotel.owner.profile_pic.url
+            ), hotel.amenities.all(), [image.url for image in hotel.images.all()]
         )
 
     def to_dtos_list(self, hotels) -> List[HotelDetailsDTO]:
         return [self.to_dto(hotel) for hotel in hotels]
 
 
-class RoomTypeConverter:
+class BaseAmenityCategoryConverter:
+    def to_dto(self, category, amenities) -> BaseAmenityCategory:
+        return BaseAmenityCategory(
+            category.id, category.name,
+            [AmenityDTO(amenity.id, amenity.name, amenity.icon) for amenity in amenities]
+        )
 
-    def to_dto(self, room_type: RoomType, check_in=None, check_out=None) -> RoomTypeDTO:
+
+class RoomTypeConverter:
+    amenity_category_converter = BaseAmenityCategoryConverter()
+
+    def to_dto(self, room_type: RoomType) -> RoomTypeDTO:
+        categories_dict = RoomType.objects.get_categories_and_amenities(room_type.id)
         return RoomTypeDTO(
             room_type.id, room_type.name, room_type.size, room_type.cover_img.url,
             room_type.beds.all(), room_type.price_per_night,
-            Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out).count()
-            if check_in is not None and check_out is not None else None,
-            RoomType.objects.get_categories_and_amenities(room_type.id)
+            room_type.number_of_guests,
+            room_type.available_rooms_count,
+            [self.amenity_category_converter.to_dto(category, amenities) for category, amenities in
+             categories_dict.items()]
         )
 
     def to_dtos_list(self, room_types: List[RoomType]) -> List[RoomTypeDTO]:

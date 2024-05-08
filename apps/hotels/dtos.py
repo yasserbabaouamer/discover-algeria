@@ -23,6 +23,13 @@ class AmenityDTO:
 
 
 @dataclass
+class BaseAmenityCategory:
+    id: int
+    name: str
+    amenities: List[AmenityDTO]
+
+
+@dataclass
 class RoomTypeDTO:
     id: int
     name: str
@@ -30,8 +37,16 @@ class RoomTypeDTO:
     cover_img: str
     beds: List[RoomTypeBed]
     price_per_night: int
-    nb_available_rooms: int
-    categories: dict
+    number_of_guests: int
+    available_rooms_count: int
+    categories: List[BaseAmenityCategory]
+
+
+@dataclass
+class OwnerEssentialInfoDTO:
+    first_name: str
+    last_name: str
+    profile_pic: str
 
 
 @dataclass
@@ -50,6 +65,7 @@ class HotelDetailsDTO:
     about: str
     business_email: str
     contact_number: str
+    owner: OwnerEssentialInfoDTO
     amenities: typing.List[AmenityDTO]
     images: List[str]
 

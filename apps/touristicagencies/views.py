@@ -27,6 +27,10 @@ class GetCityTours(APIView):
     authentication_classes = []
     permission_classes = []
 
+    @extend_schema(
+        summary='Get city tours',
+        parameters=[serializers.FilterToursRequestSerializer]
+    )
     def get(self, request, *args, **kwargs):
         city_id = self.kwargs.pop('city_id', None)
         if city_id is None:
@@ -35,3 +39,4 @@ class GetCityTours(APIView):
         if not filter_request.is_valid():
             raise ValidationError({'detail': 'Invalid params , see docs for details'})
         tours = services.find_available_tours(city_id, filter_request.validated_data)
+        return Response(data=serializers.TourSerializer(tours).data)

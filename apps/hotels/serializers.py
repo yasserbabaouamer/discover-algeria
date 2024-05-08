@@ -127,13 +127,12 @@ class RoomTypeBedSerializer(serializers.ModelSerializer):
 
 
 class RoomTypeDtoSerializer(DataclassSerializer):
-    categories = AmenityCategorySerializer(many=True)
     beds = RoomTypeBedSerializer(many=True)
 
     class Meta:
         dataclass = RoomTypeDTO
-        fields = ["id", "name", "size", "price_per_night", "cover_img",
-                  "nb_available_rooms", "beds", "categories"]
+        fields = ["id", "name", "size", "price_per_night", "cover_img", "number_of_guests",
+                  "available_rooms_count", "beds", "categories"]
 
 
 class GetHotelAvailableRoomTypesParamsSerializer(serializers.Serializer):

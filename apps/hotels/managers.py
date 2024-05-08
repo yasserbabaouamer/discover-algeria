@@ -7,6 +7,7 @@ from apps.hotels.enums import ReservationStatus
 from apps.owners.models import Owner
 from .models import *
 
+
 class RoomManager(models.Manager):
     def find_available_rooms_by_room_type(self, room_type_id: int, check_in: datetime, check_out: datetime) -> QuerySet:
         reserved_rooms = self.filter(
@@ -34,5 +35,4 @@ class RoomManager(models.Manager):
         ).annotate(
             rooms_count=Count('id')
         )
-
 

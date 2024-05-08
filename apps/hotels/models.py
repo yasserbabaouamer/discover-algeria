@@ -111,11 +111,11 @@ class HotelManager(models.Manager):
             # Get rating avg and reviews count
             reviews_subquery = GuestReview.objects.get_hotel_reviews_subquery()
             lowest_price_subquery = RoomType.objects.get_hotel_room_types_subquery()
-            return self.annotate(
+            return (self.annotate(
                 reviews_count=create_coalesce(reviews_subquery.values('reviews_count')[:1]),
                 rating_avg=create_coalesce(reviews_subquery.values('rating_avg')[:1]),
                 starts_at=Min('room_types__price_per_night')
-            ).prefetch_related('owner').get(pk=hotel_id)
+            ).prefetch_related('owner').get(pk=hotel_id))
         except ObjectDoesNotExist as e:
             raise NotFound({'detail': 'No Such Hotel with this id'})
 
@@ -316,13 +316,14 @@ class RoomTypeManager(models.Manager):
         # Access the related amenities using the amenities attribute
         amenities = room_type.amenities.all()
         # Retrieve the categories of those amenities and their associated amenities
-        categories = {}
+        categories_dict = {}
         for amenity in amenities:
+            print('amenity:', amenity.name)
             category = amenity.category
-            if category not in categories:
-                categories[category] = []
-            categories[category].append(amenity)
-        return categories
+            if category not in categories_dict.keys():
+                categories_dict[category] = []
+            categories_dict[category].append(amenity)
+        return categories_dict
 
     def get_hotel_room_types_subquery(self):
         rooms_subquery = Room.objects.get_room_type_rooms_subquery()
@@ -356,11 +357,14 @@ class RoomTypeManager(models.Manager):
         return room_types
 
     def find_available_room_types_by_hotel_id(self, hotel_id, check_in, check_out):
-        hotel = Hotel.objects.find_by_id(hotel_id)
+
+        room_types = self.filter(hotel_id=hotel_id).all()
         available_room_types = []
-        for room_type in hotel.room_types.all():
-            available_rooms = Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out)
-            if available_rooms.count() > 0:
+        for room_type in room_types:
+            room_type.available_rooms_count = len(Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out))
+            print(
+                f"{room_type.name} : {room_type.available_rooms_count}")
+            if room_type.available_rooms_count > 0:
                 available_room_types.append(room_type)
         return available_room_types
 

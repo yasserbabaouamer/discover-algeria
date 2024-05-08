@@ -64,7 +64,7 @@ class ListCreateHotelReviewView(APIView):
         return Response(data=serialized_reviews.data, status=status.HTTP_200_OK)
 
 
-class GetHotelRoomTypes(APIView):
+class GetHotelAvailableRoomTypes(APIView):
     authentication_classes = []
     permission_classes = []
 
@@ -112,7 +112,7 @@ class FindHotelsByCity(APIView):
     @extend_schema(
         tags=['Hotels'],
         summary='Filter City Hotels',
-        request=serializers.FilterRequestSerializer,
+        parameters=[serializers.FilterRequestSerializer],
         responses={
             200: serializers.HotelDetailsSerializer
         }

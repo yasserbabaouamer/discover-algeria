@@ -22,6 +22,7 @@ class Country(models.Model):
     name = models.CharField(max_length=255)
     flag = models.ImageField(upload_to='destinations/countries/', null=True)
     country_code = models.CharField(max_length=10, null=True)
+    iso = models.CharField(max_length=2, null=True)
     objects = CountryManger()
 
     class Meta:
