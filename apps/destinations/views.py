@@ -53,7 +53,10 @@ class CountryCodeView(APIView):
 
     @extend_schema(
         tags=['Destinations'],
-        summary='Get country codes'
+        summary='Get country codes',
+        responses={
+            200: OpenApiResponse(response=serializers.CountryCodeSerializer),
+        }
     )
     def get(self, request, *args, **kwargs):
         queryset = services.find_all_countries_codes()

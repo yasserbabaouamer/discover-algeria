@@ -104,7 +104,7 @@ class HotelManager(models.Manager):
             average=ExpressionWrapper(F('rating_avg') * self.w1 + F('reviews_count') * self.w2 +
                                       F('reservations_count') * self.w3 + F('revenue') * self.w4,
                                       output_field=models.FloatField())
-        ).order_by('-average').all()
+        ).order_by('-average').all()[:6]
 
     def find_by_id(self, hotel_id: int):
         try:
@@ -397,6 +397,9 @@ class RoomType(models.Model):
 class RoomTypeImage(models.Model):
     room_type = models.ForeignKey(RoomType, related_name='images', on_delete=models.SET_NULL, null=True)
     image = models.ImageField(upload_to='accommodations/room_types/')
+
+    class Meta:
+        db_table = 'room_type_images'
 
 
 class RoomTypeBed(models.Model):

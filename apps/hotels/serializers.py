@@ -151,8 +151,8 @@ class FilterRequestSerializer(serializers.Serializer):
     check_out = serializers.DateField()
     number_of_adults = serializers.IntegerField(required=False, default=2)
     number_of_children = serializers.IntegerField(required=False, default=0)
-    starts_at = serializers.IntegerField(required=False)
     ends_at = serializers.IntegerField(required=False)
+    starts_at = serializers.IntegerField(required=False)
     amenities = Amenity.objects.all()
     # Dynamically create serializers fields for each amenity
     amenity_map = {}
