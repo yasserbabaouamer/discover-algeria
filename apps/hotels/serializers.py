@@ -209,6 +209,7 @@ class MyHotelItemSerializer(serializers.ModelSerializer):
     reservations_count = serializers.IntegerField()
     check_ins_count = serializers.IntegerField()
     cancellations_count = serializers.IntegerField()
+    revenue = serializers.IntegerField()
     rooms_count = serializers.IntegerField()
     occupied_rooms_count = serializers.IntegerField()
 
@@ -218,7 +219,7 @@ class MyHotelItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hotel
         fields = ['id', 'name', 'stars', 'address', 'business_email', 'rating_avg', 'reviews_count',
-                  "cover_img", 'website_url', 'reservations_count', 'check_ins_count',
+                  "cover_img", 'website_url', 'reservations_count', "revenue", 'check_ins_count',
                   'cancellations_count', 'rooms_count', 'occupied_rooms_count']
 
 
@@ -380,10 +381,29 @@ class HotelDashboardInfoSerializer(DataclassSerializer):
 
 
 class RoomTypeItemSerializer(serializers.ModelSerializer):
-    categories = AmenityCategorySerializer(many=True)
-    beds = BedTypeSerializer(many=True)
+    categories = serializers.SerializerMethodField()
+    beds = RoomTypeBedSerializer(many=True)
     rooms_count = serializers.IntegerField()
     occupied_rooms_count = serializers.IntegerField()
+
+    def get_categories(self, room_type):
+        amenities = room_type.amenities.all()
+        # Retrieve the categories of those amenities and their associated amenities
+        categories_dict = {}
+        for amenity in amenities:
+            print('amenity:', amenity.name)
+            category = amenity.category
+            if category not in categories_dict.keys():
+                categories_dict[category] = []
+            categories_dict[category].append(amenity)
+        result = []
+        for category, amenities in categories_dict.items():
+            result.append({'id': category.id, 'name': category.name,
+                           'amenities': [
+                               {'id': amenity.id, 'name': amenity.name}
+                               for amenity in amenities
+                           ]})
+        return result
 
     class Meta:
         model = RoomType

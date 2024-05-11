@@ -425,3 +425,8 @@ def get_hotel_info_for_edit(hotel_id) -> HotelEditInfoDTO:
              for parking_type in ParkingType]
         )
     )
+
+
+def find_owner_dashboard_information(owner_id):
+
+    return None

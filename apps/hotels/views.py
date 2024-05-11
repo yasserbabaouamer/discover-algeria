@@ -148,6 +148,14 @@ class GetAllAmenities(APIView):
 
 # Owner Dashboard endpoints
 
+class GetOwnerDashboardInfo(APIView):
+    permission_classes = [IsOwner]
+
+    def get(self, request, *args, **kwargs):
+        dashboard_info = services.find_owner_dashboard_information(request.user.owner.id)
+        pass
+
+
 
 class ListCreateOwnerHotelView(APIView):
     permission_classes = [IsOwner]
