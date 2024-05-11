@@ -168,11 +168,13 @@ class HotelManager(models.Manager):
         room_type_subquery = RoomType.objects.get_hotel_room_types_subquery()
         rating_subquery = GuestReview.objects.get_hotel_reviews_subquery()
         return self.filter(owner=owner).annotate(
+            reviews_count=create_coalesce(rating_subquery.values('reviews_count')[:1]),
             rating_avg=create_coalesce(rating_subquery.values('rating_avg')[:1]),
             reservations_count=create_coalesce(reservation_subquery.values('reservations_count')[:1]),
             check_ins_count=create_coalesce(reservation_subquery.values('check_ins_count')[:1]),
             cancellations_count=create_coalesce(reservation_subquery.values('cancellations_count')[:1]),
             revenue=create_coalesce(reservation_subquery.values('revenue')[:1]),
+            rooms_count=create_coalesce(room_type_subquery.values('rooms_count')[:1]),
             occupied_rooms_count=create_coalesce(room_type_subquery.values('occupied_rooms_count')[:1])
         )
 

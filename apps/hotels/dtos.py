@@ -3,7 +3,7 @@ import typing
 from dataclasses import dataclass
 from typing import List
 
-from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview, RoomTypeBed, RoomTypePolicies
+from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview, RoomTypeBed, RoomTypePolicies, HotelRules
 
 
 @dataclass
@@ -52,6 +52,8 @@ class OwnerEssentialInfoDTO:
     profile_pic: str
 
 
+
+
 @dataclass
 class HotelDetailsDTO:
     id: int
@@ -70,7 +72,9 @@ class HotelDetailsDTO:
     contact_number: str
     owner: OwnerEssentialInfoDTO
     amenities: typing.List[AmenityDTO]
+    rules: HotelRules
     images: List[str]
+
 
 
 @dataclass

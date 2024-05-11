@@ -72,8 +72,15 @@ class AmenityCategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'icon', 'amenities']
 
 
+class HotelRulesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HotelRules
+        fields = '__all__'
+
+
 class HotelDetailsSerializer(DataclassSerializer):
     amenities = AmenitySerializer(many=True)
+    rules = HotelRulesSerializer()
 
     class Meta:
         dataclass = HotelDetailsDTO
@@ -135,6 +142,7 @@ class RoomTypePolicySerializer(serializers.ModelSerializer):
 class RoomTypeDtoSerializer(DataclassSerializer):
     beds = RoomTypeBedSerializer(many=True)
     policies = RoomTypePolicySerializer()
+
     class Meta:
         dataclass = RoomTypeDTO
         fields = ["id", "name", "size", "price_per_night", "cover_img", "number_of_guests",
@@ -197,10 +205,11 @@ class AmenityCategoryDtoSerializer(DataclassSerializer):
 class MyHotelItemSerializer(serializers.ModelSerializer):
     address = serializers.SerializerMethodField()
     rating_avg = serializers.FloatField()
-    # reviews_count = serializers.IntegerField()
+    reviews_count = serializers.IntegerField()
     reservations_count = serializers.IntegerField()
     check_ins_count = serializers.IntegerField()
     cancellations_count = serializers.IntegerField()
+    rooms_count = serializers.IntegerField()
     occupied_rooms_count = serializers.IntegerField()
 
     def get_address(self, obj):
@@ -208,8 +217,9 @@ class MyHotelItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Hotel
-        fields = ['id', 'name', 'stars', 'address', 'business_email', 'rating_avg',
-                  'reservations_count', 'check_ins_count', 'cancellations_count', 'occupied_rooms_count']
+        fields = ['id', 'name', 'stars', 'address', 'business_email', 'rating_avg', 'reviews_count',
+                  "cover_img", 'website_url', 'reservations_count', 'check_ins_count',
+                  'cancellations_count', 'rooms_count', 'occupied_rooms_count']
 
 
 class BaseHotelInfoSerializer(serializers.Serializer):
