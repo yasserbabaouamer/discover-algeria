@@ -3,6 +3,7 @@ import typing
 from dataclasses import dataclass
 from typing import List
 
+from apps.destinations.models import Country
 from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview, RoomTypeBed, RoomTypePolicies, HotelRules
 
 
@@ -52,8 +53,6 @@ class OwnerEssentialInfoDTO:
     profile_pic: str
 
 
-
-
 @dataclass
 class HotelDetailsDTO:
     id: int
@@ -74,7 +73,6 @@ class HotelDetailsDTO:
     amenities: typing.List[AmenityDTO]
     rules: HotelRules
     images: List[str]
-
 
 
 @dataclass
@@ -126,7 +124,7 @@ class CountryCodeDTO:
 
 
 @dataclass
-class CityDTO:
+class BaseCityDTO:
     id: int
     name: str
 
@@ -147,7 +145,7 @@ class StaffLanguageDTO:
 class HotelInfoDTO:
     current_country_code: str
     country_codes: List[CountryCodeDTO]
-    cities: List[CityDTO]
+    cities: List[BaseCityDTO]
     facilities: List[FacilityDTO]
     staff_languages: List[StaffLanguageDTO]
 
@@ -187,3 +185,27 @@ class HotelEditInfoDTO:
     hotel_info: HotelInfoDTO
     hotel_rules: HotelRulesDTO
     parking: HotelParkingSituationDTO
+
+
+@dataclass
+class CityDTO(BaseCityDTO):
+    checked: bool
+    country_id: int
+
+
+@dataclass
+class CountryDTO:
+    id: int
+    name: str
+    checked: bool
+
+
+@dataclass
+class HotelCreateInfoDTO:
+    countries: List[CountryDTO]
+    cities: List[CityDTO]
+    languages: List[StaffLanguageDTO]
+    facilities: List[FacilityDTO]
+    cancellations_policies: List[HotelCancellationPolicyDTO]
+    prepayment_policies: List[HotelPrepaymentPolicyDTO]
+    parking_types: List[ParkingTypeDTO]

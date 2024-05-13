@@ -31,7 +31,6 @@ def get_hotel_details_by_id(hotel_id: int):
     return hotel_dto
 
 
-
 def get_room_types_by_hotel_id(hotel_id: int, dates: dict):
     room_types = RoomType.objects.find_available_room_types_by_hotel_id(hotel_id, dates['check_in'], dates['check_out'])
     room_types_dto = room_type_converter.to_dtos_list(room_types)
@@ -408,7 +407,7 @@ def get_hotel_info_for_edit(hotel_id) -> HotelEditInfoDTO:
         HotelInfoDTO(
             hotel.country_code.country_code,
             [CountryCodeDTO(country.id, country.name, country.country_code) for country in Country.objects.all()],
-            [CityDTO(city.id, city.name) for city in City.objects.all()],
+            [BaseCityDTO(city.id, city.name) for city in City.objects.all()],
             [FacilityDTO(facility.id, facility.name, facility.icon, facility.checked) for facility in
              Amenity.objects.find_amenities_by_hotel_id(hotel.id)],
             [StaffLanguageDTO(language.id, language.name, language.checked)
@@ -428,5 +427,24 @@ def get_hotel_info_for_edit(hotel_id) -> HotelEditInfoDTO:
 
 
 def find_owner_dashboard_information(owner_id):
-
     return None
+
+
+def get_essential_info_for_hotel_creation():
+    countries = Country.objects.all()
+    cities = City.objects.all()
+    languages = Language.objects.all()
+    facilities = Amenity.objects.filter(category__name='Facilities').all()
+    obj = HotelCreateInfoDTO(
+        [CountryDTO(country.id, country.name, False) for country in countries],
+        [CityDTO(city.id, city.name, False, city.country.id) for city in cities],
+        [StaffLanguageDTO(language.id, language.name, False) for language in languages],
+        [FacilityDTO(facility.id, facility.name, facility.icon, False) for facility in facilities],
+        [HotelCancellationPolicyDTO(policy, False) for policy in HotelCancellationPolicy],
+        [HotelPrepaymentPolicyDTO(policy, False) for policy in HotelPrepaymentPolicy],
+        [ParkingTypeDTO(type, False) for type in ParkingType]
+    )
+    obj.cancellations_policies[0].checked = True
+    obj.prepayment_policies[0].checked = True
+    obj.parking_types[0].checked = True
+    return obj

@@ -156,7 +156,6 @@ class GetOwnerDashboardInfo(APIView):
         pass
 
 
-
 class ListCreateOwnerHotelView(APIView):
     permission_classes = [IsOwner]
     pagination_class = PageNumberPagination
@@ -209,6 +208,15 @@ class GetHotelEditInformation(APIView):
         hotel_edit_info = services.get_hotel_info_for_edit(hotel_id)
         response = serializers.HotelEditInfoDtoSerializer(hotel_edit_info)
         return Response(data=response.data, status=status.HTTP_200_OK)
+
+
+class GetHotelCreateInformation(APIView):
+    permission_classes = [IsOwner]
+
+    def get(self, request, *args, **kwargs):
+        create_hotel_info = services.get_essential_info_for_hotel_creation()
+        response = serializers.HotelCreateInfoDtoSerializer(create_hotel_info)
+        return Response(response.data)
 
 
 class ManageOwnerHotelDetailsView(APIView):

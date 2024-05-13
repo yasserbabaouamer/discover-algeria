@@ -127,8 +127,12 @@ class HotelManager(models.Manager):
         hotels = self.annotate(
             rating_avg=SubqueryAvg('reservations__review__rating'),
             reviews_count=SubqueryCount('reservations__review'),
-            starts_at=SubqueryMin('room_types__price_per_night'),
-        ).filter(city_id=city_id, starts_at__gte=price_starts_at, starts_at__lte=price_ends_at).all()
+            starts_at=SubqueryMin('room_types__price_per_night',
+                                  filter=Q(price_per_night__gte=price_starts_at,
+                                           price_per_night__lte=price_ends_at)),
+        ).filter(
+            city_id=city_id,
+        ).all()
         available_hotels = []
         for hotel in hotels.all():
             for room_type in hotel.room_types.all():
@@ -155,7 +159,7 @@ class HotelManager(models.Manager):
     def find_owner_hotels(self, owner: Owner):
         return self.filter(owner=owner).annotate(
             reviews_count=SubqueryCount('reservations__review'),
-            rating_avg=SubqueryAvg('reservations__review__rating'),
+            rating_avg=Coalesce(SubqueryAvg('reservations__review__rating'), Value(0)),
             reservations_count=SubqueryCount('reservations'),
             check_ins_count=SubqueryCount('reservations',
                                           filter=~Q(
@@ -163,8 +167,8 @@ class HotelManager(models.Manager):
             cancellations_count=SubqueryCount('reservations',
                                               filter=Q(status__in=[ReservationStatus.CANCELLED_BY_GUEST,
                                                                    ReservationStatus.CANCELLED_BY_OWNER])),
-            revenue=SubquerySum('reservations__total_price',
-                                filter=Q(status=ReservationStatus.COMPLETED)),
+            revenue=Coalesce(SubquerySum('reservations__total_price',
+                                         filter=Q(status=ReservationStatus.COMPLETED)), Value(0)),
             rooms_count=SubqueryCount('room_types__rooms'),
             occupied_rooms_count=SubqueryCount(
                 'reservations__reserved_room_types__assigned_rooms__room_id',
@@ -350,18 +354,17 @@ class RoomTypeManager(models.Manager):
         #     room_type.categories = self.get_categories_and_amenities(room_type.id)
         return room_types
 
-
-def find_available_room_types_by_hotel_id(self, hotel_id, check_in, check_out):
-    room_types = self.filter(hotel_id=hotel_id).all()
-    available_room_types = []
-    for room_type in room_types:
-        room_type.available_rooms_count = len(
-            Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out))
-        print(
-            f"{room_type.name} : {room_type.available_rooms_count}")
-        if room_type.available_rooms_count > 0:
-            available_room_types.append(room_type)
-    return available_room_types
+    def find_available_room_types_by_hotel_id(self, hotel_id, check_in, check_out):
+        room_types = self.filter(hotel_id=hotel_id).all()
+        available_room_types = []
+        for room_type in room_types:
+            room_type.available_rooms_count = len(
+                Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out))
+            print(
+                f"{room_type.name} : {room_type.available_rooms_count}")
+            if room_type.available_rooms_count > 0:
+                available_room_types.append(room_type)
+        return available_room_types
 
 
 class RoomType(models.Model):

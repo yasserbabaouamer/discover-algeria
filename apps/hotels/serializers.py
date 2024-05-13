@@ -10,6 +10,9 @@ from .models import Hotel, HotelImage, RoomType, Reservation, Amenity, AmenityCa
 from ..destinations.models import Country, City
 
 
+MAX_LONG = 9223372036854775807
+
+
 class HotelImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = HotelImage
@@ -159,8 +162,8 @@ class FilterRequestSerializer(serializers.Serializer):
     check_out = serializers.DateField()
     number_of_adults = serializers.IntegerField(required=False, default=2)
     number_of_children = serializers.IntegerField(required=False, default=0)
-    ends_at = serializers.IntegerField(required=False)
-    starts_at = serializers.IntegerField(required=False)
+    starts_at = serializers.IntegerField(required=False, default=0)
+    ends_at = serializers.IntegerField(required=False, default=MAX_LONG)
     amenities = Amenity.objects.all()
     # Dynamically create serializers fields for each amenity
     amenity_map = {}
@@ -182,10 +185,6 @@ class FilterRequestSerializer(serializers.Serializer):
         check_out = data.get('check_out')
         if check_in >= check_out:
             raise serializers.ValidationError({'detail': "End date must be after start date"})
-        if (data.get('starts_at') is None and data.get('ends_at') is not None
-                or data.get('starts_at') is not None and data.get('ends_at') is None):
-            raise serializers.ValidationError({'detail': "Provide both range values or go to play away."})
-
         return data
 
 
@@ -212,6 +211,7 @@ class MyHotelItemSerializer(serializers.ModelSerializer):
     revenue = serializers.IntegerField()
     rooms_count = serializers.IntegerField()
     occupied_rooms_count = serializers.IntegerField()
+    amenities = AmenitySerializer(many=True)
 
     def get_address(self, obj):
         return f"{obj.address}, {obj.city.name}, {obj.city.country.name}"
@@ -220,7 +220,7 @@ class MyHotelItemSerializer(serializers.ModelSerializer):
         model = Hotel
         fields = ['id', 'name', 'stars', 'address', 'business_email', 'rating_avg', 'reviews_count',
                   "cover_img", 'website_url', 'reservations_count', "revenue", 'check_ins_count',
-                  'cancellations_count', 'rooms_count', 'occupied_rooms_count']
+                  'cancellations_count', 'rooms_count', 'occupied_rooms_count', 'amenities']
 
 
 class BaseHotelInfoSerializer(serializers.Serializer):
@@ -475,14 +475,14 @@ class HotelParkingSituationSerializer(BaseHotelParkingSituationSerializer):
     parking_types = ParkingTypeSerializer(many=True)
 
 
-class HotelRulesSerializer(BaseHotelRulesSerializer):
+class AllHotelRulesSerializer(BaseHotelRulesSerializer):
     cancellation_policies = HotelCancellationPolicySerializer(many=True)
     prepayment_policies = HotelPrepaymentPolicySerializer(many=True)
 
 
 class GetHotelInfoForUpdateSerializer(serializers.Serializer):
     hotel_info = HotelInfoSerializer()
-    hotel_rules = HotelRulesSerializer()
+    hotel_rules = AllHotelRulesSerializer()
     parking = HotelParkingSituationSerializer()
 
 
@@ -615,3 +615,8 @@ class UpdateRoomTypeFormSerializer(serializers.Serializer):
 class HotelEditInfoDtoSerializer(DataclassSerializer):
     class Meta:
         dataclass = HotelEditInfoDTO
+
+
+class HotelCreateInfoDtoSerializer(DataclassSerializer):
+    class Meta:
+        dataclass = HotelCreateInfoDTO
