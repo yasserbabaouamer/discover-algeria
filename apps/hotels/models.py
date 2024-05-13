@@ -123,7 +123,7 @@ class HotelManager(models.Manager):
         return result.all()
 
     def find_available_hotels_by_city_id(self, city_id, check_in: datetime, check_out: datetime,
-                                         price_starts_at: int, price_ends_at: int):
+                                         price_starts_at: int, price_ends_at: int, stars: int):
         hotels = self.annotate(
             rating_avg=SubqueryAvg('reservations__review__rating'),
             reviews_count=SubqueryCount('reservations__review'),
@@ -133,6 +133,8 @@ class HotelManager(models.Manager):
         ).filter(
             city_id=city_id,
         ).all()
+        if stars is not None:
+            hotels = hotels.filter(stars=stars)
         available_hotels = []
         for hotel in hotels.all():
             for room_type in hotel.room_types.all():

@@ -108,12 +108,14 @@ def filter_city_hotels(city_id, search_req: dict):
     check_out = _datetime.combine(search_req['check_out'], time(12, 0))
     price_starts_at = search_req.pop('starts_at', 0)
     price_ends_at = search_req.pop('ends_at', MAX_LONG)
+    stars = search_req.pop('stars', None)
     hotels = Hotel.objects.find_available_hotels_by_city_id(
         city_id=city_id,
         check_in=check_in,
         check_out=check_out,
         price_starts_at=price_starts_at,
-        price_ends_at=price_ends_at
+        price_ends_at=price_ends_at,
+        stars=stars,
     )
     print("Available Hotels :", hotels)
     search_req.pop('check_in')

@@ -9,7 +9,6 @@ from .enums import HotelPrepaymentPolicy, ParkingType, HotelCancellationPolicy, 
 from .models import Hotel, HotelImage, RoomType, Reservation, Amenity, AmenityCategory, BedType, GuestReview, Language
 from ..destinations.models import Country, City
 
-
 MAX_LONG = 9223372036854775807
 
 
@@ -164,6 +163,8 @@ class FilterRequestSerializer(serializers.Serializer):
     number_of_children = serializers.IntegerField(required=False, default=0)
     starts_at = serializers.IntegerField(required=False, default=0)
     ends_at = serializers.IntegerField(required=False, default=MAX_LONG)
+    stars = serializers.IntegerField(required=False, default=None,
+                                     validators=[MinValueValidator(1), MaxValueValidator(5)])
     amenities = Amenity.objects.all()
     # Dynamically create serializers fields for each amenity
     amenity_map = {}
