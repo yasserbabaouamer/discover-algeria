@@ -441,12 +441,12 @@ def get_essential_info_for_hotel_creation():
         [CountryDTO(country.id, country.name, False) for country in countries],
         [CityDTO(city.id, city.name, False, city.country.id) for city in cities],
         [StaffLanguageDTO(language.id, language.name, False) for language in languages],
-        [FacilityDTO(facility.id, facility.name, facility.icon, False) for facility in facilities],
+        [FacilityDTO(facility.id, facility.name, facility.icon.url, False) for facility in facilities],
         [HotelCancellationPolicyDTO(policy, False) for policy in HotelCancellationPolicy],
         [HotelPrepaymentPolicyDTO(policy, False) for policy in HotelPrepaymentPolicy],
         [ParkingTypeDTO(type, False) for type in ParkingType]
     )
-    obj.cancellations_policies[0].checked = True
+    obj.cancellation_policies[0].checked = True
     obj.prepayment_policies[0].checked = True
     obj.parking_types[0].checked = True
     return obj

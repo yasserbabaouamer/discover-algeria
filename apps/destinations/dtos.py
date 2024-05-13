@@ -27,7 +27,8 @@ class TourDTO:
     id: int
     title: str
     cover_img: str
-    rating: RatingDTO
+    rating_avg: float
+    reviews_count: int
     starts_at: int
 
 

@@ -206,6 +206,6 @@ class HotelCreateInfoDTO:
     cities: List[CityDTO]
     languages: List[StaffLanguageDTO]
     facilities: List[FacilityDTO]
-    cancellations_policies: List[HotelCancellationPolicyDTO]
+    cancellation_policies: List[HotelCancellationPolicyDTO]
     prepayment_policies: List[HotelPrepaymentPolicyDTO]
     parking_types: List[ParkingTypeDTO]

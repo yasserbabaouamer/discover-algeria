@@ -151,9 +151,8 @@ class HotelManager(models.Manager):
         ).exists()
 
     def find_top_hotels_by_city_id(self, city_id: int):
-        reviews_subquery = GuestReview.objects.get_hotel_reviews_subquery()
         return (self.annotate(
-            rating_avg=SubqueryAvg('reservations__review__rating'),
+            rating_avg=Coalesce(SubqueryAvg('reservations__review__rating'), Value(0)),
             reviews_count=SubqueryCount('reservations__review'),
             starts_at=SubqueryMin('room_types__price_per_night'),
         ).filter(city_id=city_id).order_by('-reviews_count').all())

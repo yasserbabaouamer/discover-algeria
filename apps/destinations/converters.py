@@ -21,7 +21,8 @@ class TourDtoConverter:
             id=tour.id,
             title=tour.title,
             cover_img=tour.cover_img.url,
-            rating=RatingDTO(tour.number_of_reviews, tour.avg_rating),
+            rating_avg=tour.rating_avg,
+            reviews_count=tour.reviews_count,
             starts_at=tour.price
         )
 
@@ -34,7 +35,7 @@ class CityDtoConverter:
         hotel_converter = HotelDtoConverter()
         tour_converter = TourDtoConverter()
         return CityDetailsDTO(
-            city.id, city.name, city.description, city.cover_img.url, [image.url for image in city.images.all()],
+            city.id, city.name, city.description, city.cover_img.url, [image.image.url for image in city.images.all()],
             hotel_converter.convert_hotels_to_dtos_list(Hotel.objects.find_top_hotels_by_city_id(city.id)),
             tour_converter.convert_tours_to_dtos_list(PeriodicTour.objects.find_top_tours_by_city_id(city.id)),
         )

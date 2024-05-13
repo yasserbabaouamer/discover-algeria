@@ -4,6 +4,7 @@ from django.db.models import Q, Func, F, BigIntegerField, FloatField, Value, Che
     Sum
 from django.db.models.functions import Coalesce
 from django.utils.dates import WEEKDAYS
+from sql_util.aggregates import SubqueryCount, SubqueryAvg
 
 from apps.users.models import User
 from .enums import TourStatus, ScheduledTourStatus
@@ -76,11 +77,13 @@ class PeriodicTourManager(models.Manager):
 
     def find_top_tours_by_city_id(self, city_id: int):
         return self.annotate(
-            number_of_reviews=Count('scheduled_tours__registrations__review'),
-            avg_ratings=Avg('scheduled_tours__registrations__review__rating')
+            reviews_count=SubqueryCount('scheduled_tours__registrations__review'),
+            rating_avg=Coalesce(
+                SubqueryAvg('scheduled_tours__registrations__review__rating'),
+                Value(0))
         ).filter(
             city_id=city_id,
-        )
+        ).all()
 
     def find_available_tours_by_city_id(self, city_id, days: dict):
         (self.filter(
@@ -89,8 +92,10 @@ class PeriodicTourManager(models.Manager):
             Q(scheduled_tours__tour_date__in=days.values(),
               scheduled_tours__tour_status__ne=ScheduledTourStatus.CANCELLED.value),
         ).annotate(
-            number_of_reviews=Count('scheduled_tours__registrations__review'),
-            avg_ratings=Avg('scheduled_tours__registrations__review__rating')
+            reviews_count=SubqueryCount('scheduled_tours__registrations__review'),
+            rating_avg=Coalesce(
+                SubqueryAvg('scheduled_tours__registrations__review__rating'),
+                Value(0))
         ).all())
 
 
