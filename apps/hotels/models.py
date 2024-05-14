@@ -132,6 +132,8 @@ class HotelManager(models.Manager):
                                            price_per_night__lte=price_ends_at)),
         ).filter(
             city_id=city_id,
+            starts_at__gte=price_starts_at,
+            starts_at__lte=price_ends_at,
         ).all()
         if stars is not None:
             hotels = hotels.filter(stars=stars)
