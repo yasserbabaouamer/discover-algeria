@@ -129,7 +129,6 @@ def filter_city_hotels(city_id, search_req: dict):
                 if not Hotel.objects.has_amenity(hotel.id, FilterRequestSerializer.amenity_map[key]):
                     hotels.remove(hotel)
                     break
-
     converter = HotelDetailsDtoConverter()
     return converter.to_dtos_list(hotels)
 

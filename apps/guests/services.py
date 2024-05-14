@@ -54,3 +54,7 @@ def setup_guest_profile(user: User, profile_request: dict):
 
 def find_guest_by_id(guest_id):
     return get_object_or_404(Guest, pk=guest_id)
+
+
+def find_guest_profile(guest_id):
+    return Guest.objects.find_guest_profile(guest_id)

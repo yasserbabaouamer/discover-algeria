@@ -48,6 +48,7 @@ class RoomTypeDTO:
 
 @dataclass
 class OwnerEssentialInfoDTO:
+    id: int
     first_name: str
     last_name: str
     profile_pic: str
@@ -60,8 +61,8 @@ class HotelDetailsDTO:
     stars: int
     address: str
     starts_at: int
-    number_of_reviews: int
-    avg_ratings: float
+    reviews_count: int
+    rating_avg: float
     longitude: float
     latitude: float
     website_url: str

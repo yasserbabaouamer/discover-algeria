@@ -12,6 +12,12 @@ class CitySerializer(rest_serializers.ModelSerializer):
         fields = ['id', 'name', 'cover_img']
 
 
+class CountrySerializer(rest_serializers.ModelSerializer):
+    class Meta:
+        model = models.Country
+        fields = ['id', 'name', 'flag']
+
+
 class CityImageSerializer(rest_serializers.ModelSerializer):
     class Meta:
         model = models.CityImage

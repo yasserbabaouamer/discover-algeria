@@ -27,6 +27,7 @@ class HotelDetailsDtoConverter:
             hotel.starts_at, hotel.reviews_count, hotel.rating_avg, hotel.longitude, hotel.latitude,
             hotel.website_url, hotel.cover_img.url, hotel.about, hotel.business_email,
             hotel.contact_number, OwnerEssentialInfoDTO(
+                hotel.owner.id,
                 hotel.owner.first_name,
                 hotel.owner.last_name,
                 hotel.owner.profile_pic.url
