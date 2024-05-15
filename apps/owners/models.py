@@ -1,6 +1,8 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import CheckConstraint, Q
+from django.db.models import CheckConstraint, Q, Value
+from rest_framework.exceptions import NotFound
 
 from apps.destinations.models import Country
 from apps.users.enums import Currency
@@ -19,12 +21,22 @@ class OwnerManager(models.Manager):
             country=country
         )
 
+    def find_profile_by_id(self, owner_id):
+        try:
+            return self.annotate(
+                overall_rating=Value(0)
+            ).get(id=owner_id)
+        except ObjectDoesNotExist as e:
+            raise NotFound({'detail': 'No such owner with this id'})
+
 
 class Owner(models.Model):
     user = models.OneToOneField(User, related_name='owner', on_delete=models.SET_NULL, null=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     birthday = models.DateField(auto_now=True)
+    address = models.CharField(max_length=255, null=True)
+    about = models.TextField(null=True)
     country_code = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
     phone = models.PositiveIntegerField(validators=[RegexValidator(regex="^\d{7,15}$")])
     country = models.ForeignKey(Country, related_name='owners', on_delete=models.CASCADE, null=True)

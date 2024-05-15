@@ -229,11 +229,11 @@ class BaseHotelInfoSerializer(serializers.Serializer):
     address = serializers.CharField(max_length=255)
     stars = serializers.IntegerField(validators=[MaxValueValidator(5), MinValueValidator(1)])
     about = serializers.CharField(max_length=350)
-    business_email = serializers.CharField(default=None)
+    business_email = serializers.CharField(default=None, allow_null=True)
     contact_number = serializers.IntegerField()
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
-    website = serializers.URLField(default=None)
+    website = serializers.URLField(default=None, allow_null=True)
 
 
 class CreateHotelInfoSerializer(BaseHotelInfoSerializer):

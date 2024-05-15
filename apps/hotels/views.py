@@ -213,6 +213,11 @@ class GetHotelEditInformation(APIView):
 class GetHotelCreateInformation(APIView):
     permission_classes = [IsOwner]
 
+    @extend_schema(
+        summary='Get essential information and options for hotel creation',
+        tags=['Owner Dashboard'],
+        responses=serializers.HotelCreateInfoDtoSerializer
+    )
     def get(self, request, *args, **kwargs):
         create_hotel_info = services.get_essential_info_for_hotel_creation()
         response = serializers.HotelCreateInfoDtoSerializer(create_hotel_info)

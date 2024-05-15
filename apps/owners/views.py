@@ -1,9 +1,11 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from core.utils import CustomException
 from . import serializers, services
 from .dtos import OwnerTokens
 from .permissions import *
@@ -60,27 +62,57 @@ class SetupOwnerProfileView(APIView):
 
 
 class GetOwnerEssentials(APIView):
-    permission_classes = [IsProfileOwner]
+    permission_classes = [IsOwner]
 
+    @extend_schema(
+        summary='Get Owner essential information',
+        tags=['Owner'],
+        responses=serializers.OwnerEssentialInfoSerializer
+    )
     def get(self, request, *args, **kwargs):
         owner_info = services.find_owner_essentials_info(request.user.owner.id)
         self.check_object_permissions(request, owner_info)
-        return Response(serializers.OwnerEssentialsInfo(owner_info).data)
+        return Response(serializers.OwnerEssentialInfoSerializer(owner_info).data)
 
 
 class ManageProfileView(APIView):
-    permission_classes = [IsProfileOwner]
+    permission_classes = [IsOwner]
 
     @extend_schema(
-        summary='Get owner profile information',
-        tags=['Owner']
+        summary='Get owner profile - Owner',
+        tags=['Owner'],
+        responses=serializers.OwnerProfileSerializer
     )
     def get(self, request, *args, **kwargs):
-        pass
+        profile = services.find_owner_profile(request.user.owner.id)
+        response = serializers.OwnerProfileSerializer(profile)
+        return Response(response.data)
 
     @extend_schema(
-        summary='Update profile information',
+        summary='Update profile - Owner',
         tags=['Owner']
     )
     def put(self, request, *args, **kwargs):
         pass
+
+
+class GetOwnerProfileForAnyone(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        summary='Get Owner profile for anyone',
+        tags=['Owner'],
+        responses={
+            200: OpenApiResponse(response=serializers.OwnerProfileForAnyoneSerializer),
+            400: OpenApiResponse(description="Provide an owner id"),
+            404: OpenApiResponse(description="No such owner with this id")
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        owner_id = kwargs.pop('id', None)
+        if owner_id is None:
+            raise ValidationError({'detail': 'Provide an owner id'})
+        profile = services.find_owner_profile(owner_id)
+        response = serializers.OwnerProfileForAnyoneSerializer(profile)
+        return Response(response.data)

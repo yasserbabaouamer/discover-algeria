@@ -6,6 +6,7 @@ from rest_framework_dataclasses.serializers import DataclassSerializer
 
 from .dtos import *
 from .models import Owner
+from ..destinations.serializers import CountrySerializer
 
 
 class OwnerLoginRequestSerializer(serializers.Serializer):
@@ -33,7 +34,7 @@ class SetupOwnerProfileFormSerializer(serializers.Serializer):
         return data
 
 
-class OwnerEssentialsInfo(serializers.ModelSerializer):
+class OwnerEssentialInfoSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
 
     def get_email(self, owner: Owner):
@@ -41,4 +42,26 @@ class OwnerEssentialsInfo(serializers.ModelSerializer):
 
     class Meta:
         model = Owner
-        fields = ['id', 'first_name', 'last_name', 'profile_pic', 'email']
+        fields = ['id', 'first_name', 'last_name', 'profile_pic', 'email', 'phone']
+
+
+class OwnerProfileForAnyoneSerializer(OwnerEssentialInfoSerializer):
+    country = CountrySerializer()
+    overall_rating = serializers.FloatField()
+
+    class Meta:
+        model = Owner
+        fields = list(OwnerEssentialInfoSerializer.Meta.fields
+                      + ['about', 'overall_rating', 'country'])
+        fields.remove('phone')
+
+
+class OwnerProfileSerializer(OwnerProfileForAnyoneSerializer):
+    role = serializers.SerializerMethodField()
+
+    def get_role(self, owner: Owner):
+        return "owner"
+
+    class Meta:
+        model = Owner
+        fields = OwnerProfileForAnyoneSerializer.Meta.fields + ['role', 'birthday', 'phone', 'address']

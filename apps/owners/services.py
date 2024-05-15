@@ -54,3 +54,7 @@ def setup_owner_profile(user: User, data: dict):
 
 def find_owner_essentials_info(_id):
     return get_object_or_404(Owner, pk=_id)
+
+
+def find_owner_profile(owner_id):
+    return Owner.objects.find_profile_by_id(owner_id)

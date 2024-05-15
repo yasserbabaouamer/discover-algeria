@@ -1,6 +1,6 @@
 from .dtos import *
 from .enums import HotelCancellationPolicy, HotelPrepaymentPolicy, ParkingType
-from .models import Hotel, GuestReview, RoomType, Room, Language
+from .models import Hotel, GuestReview, RoomType, Room, Language, Amenity, AmenityCategory
 from ..destinations.models import Country, City
 
 
@@ -91,7 +91,8 @@ class HotelDashboardRoomTypeDtoConverter:
     def to_dto(self, room_type: RoomType) -> HotelDashboardRoomTypeDto:
         print(f"Monthly revenue for room_type {room_type.name} is : f{room_type.monthly_revenue}")
         return HotelDashboardRoomTypeDto(
-            room_type.id, room_type.rooms_count, room_type.occupied_rooms_count, room_type.monthly_revenue
+            room_type.id, room_type.name, room_type.rooms_count,
+            room_type.occupied_rooms_count, room_type.monthly_revenue
         )
 
     def to_dtos_list(self, room_types):

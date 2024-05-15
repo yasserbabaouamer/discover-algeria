@@ -1,10 +1,9 @@
-import datetime
 import typing
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List
 
-from apps.destinations.models import Country
-from apps.hotels.models import Amenity, BedType, AmenityCategory, GuestReview, RoomTypeBed, RoomTypePolicies, HotelRules
+from apps.hotels.models import GuestReview, RoomTypeBed, RoomTypePolicies, HotelRules
 
 
 @dataclass
@@ -15,7 +14,7 @@ class ReviewDTO:
     title: str
     content: str
     rating: int
-    created_at: datetime.datetime
+    created_at: datetime
 
 
 @dataclass
@@ -98,6 +97,7 @@ class HotelDashboardReservationDto:
 @dataclass
 class HotelDashboardRoomTypeDto:
     id: int
+    name: str
     rooms_count: int
     occupied_rooms_count: int
     revenue_month: int
@@ -210,3 +210,27 @@ class HotelCreateInfoDTO:
     cancellation_policies: List[HotelCancellationPolicyDTO]
     prepayment_policies: List[HotelPrepaymentPolicyDTO]
     parking_types: List[ParkingTypeDTO]
+
+
+@dataclass
+class ReservedRoomTypeDTO:
+    name: str
+    quantity: int
+
+
+@dataclass
+class HotelEssentialDTO:
+    id: int
+    name: str
+
+
+@dataclass
+class GuestReservationDTO:
+    id: int
+    total_price: int
+    check_in: datetime
+    check_out: datetime
+    created_at: datetime
+    hotel: HotelEssentialDTO
+    reserved_room_types: List[ReservedRoomTypeDTO]
+
