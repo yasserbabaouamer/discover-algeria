@@ -1,6 +1,6 @@
 import typing
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, date
 from typing import List
 
 from apps.hotels.models import GuestReview, RoomTypeBed, RoomTypePolicies, HotelRules
@@ -18,7 +18,7 @@ class ReviewDTO:
 
 
 @dataclass
-class AmenityDTO:
+class BaseAmenityDTO:
     id: int
     name: str
     icon: str
@@ -28,7 +28,7 @@ class AmenityDTO:
 class BaseAmenityCategory:
     id: int
     name: str
-    amenities: List[AmenityDTO]
+    amenities: List[BaseAmenityDTO]
 
 
 @dataclass
@@ -54,6 +54,21 @@ class OwnerEssentialInfoDTO:
 
 
 @dataclass
+class BaseHotelDTO:
+    id: int
+    name: str
+    stars: int
+    address: str
+    longitude: float
+    latitude: float
+    website_url: str
+    cover_img: str
+    about: str
+    business_email: str
+    contact_number: str
+
+
+@dataclass
 class HotelDetailsDTO:
     id: int
     name: str
@@ -70,7 +85,7 @@ class HotelDetailsDTO:
     business_email: str
     contact_number: str
     owner: OwnerEssentialInfoDTO
-    amenities: typing.List[AmenityDTO]
+    amenities: typing.List[BaseAmenityDTO]
     rules: HotelRules
     images: List[str]
 
@@ -131,7 +146,7 @@ class BaseCityDTO:
 
 
 @dataclass
-class FacilityDTO(AmenityDTO):
+class AmenityDTO(BaseAmenityDTO):
     checked: bool
 
 
@@ -143,11 +158,12 @@ class StaffLanguageDTO:
 
 
 @dataclass
-class HotelInfoDTO:
-    current_country_code: str
+class HotelInfoDTO(BaseHotelDTO):
+    current_city_id: int
+    current_country_code_id: int
     country_codes: List[CountryCodeDTO]
     cities: List[BaseCityDTO]
-    facilities: List[FacilityDTO]
+    facilities: List[AmenityDTO]
     staff_languages: List[StaffLanguageDTO]
 
 
@@ -171,6 +187,8 @@ class ParkingTypeDTO:
 
 @dataclass
 class HotelParkingSituationDTO:
+    parking_available: bool
+    reservation_needed: bool
     parking_types: List[ParkingTypeDTO]
 
 
@@ -182,10 +200,31 @@ class HotelRulesDTO:
 
 
 @dataclass
-class HotelEditInfoDTO:
-    hotel_info: HotelInfoDTO
-    hotel_rules: HotelRulesDTO
-    parking: HotelParkingSituationDTO
+class ImageDTO:
+    id: int
+    url: str
+
+
+@dataclass
+class HotelEditInfoDTO(BaseHotelDTO):
+    current_city_id: int
+    current_country_id: int
+    current_country_code_id: int
+    country_codes: List[CountryCodeDTO]
+    cities: List[BaseCityDTO]
+    facilities: List[AmenityDTO]
+    staff_languages: List[StaffLanguageDTO]
+    check_in_from: datetime
+    check_in_until: datetime
+    check_out_from: datetime
+    check_out_until: datetime
+    cancellation_policies: List[HotelCancellationPolicyDTO]
+    days_before_cancellation: int
+    prepayment_policies: List[HotelPrepaymentPolicyDTO]
+    parking_available: bool
+    reservation_needed: bool
+    parking_types: List[ParkingTypeDTO]
+    images: List[ImageDTO]
 
 
 @dataclass
@@ -206,7 +245,7 @@ class HotelCreateInfoDTO:
     countries: List[CountryDTO]
     cities: List[CityDTO]
     languages: List[StaffLanguageDTO]
-    facilities: List[FacilityDTO]
+    facilities: List[AmenityDTO]
     cancellation_policies: List[HotelCancellationPolicyDTO]
     prepayment_policies: List[HotelPrepaymentPolicyDTO]
     parking_types: List[ParkingTypeDTO]
@@ -234,3 +273,70 @@ class GuestReservationDTO:
     hotel: HotelEssentialDTO
     reserved_room_types: List[ReservedRoomTypeDTO]
 
+
+@dataclass
+class RoomCancellationPolicyDTO:
+    policy: str
+    checked: bool
+
+
+@dataclass
+class RoomPrepaymentPolicyDTO:
+    policy: str
+    checked: bool
+
+
+@dataclass
+class CreateRoomInfoDTO:
+    room_types: List[str]
+    amenities: List[AmenityDTO]
+    cancellation_policies: List[RoomCancellationPolicyDTO]
+    prepayment_policies: List[RoomPrepaymentPolicyDTO]
+
+
+@dataclass
+class RoomEditInfoDTO:
+    selected_room_type: str
+    number_of_rooms: int
+    number_of_guests: int
+    price_per_night: int
+    size: int
+    room_types: List[str]
+    amenities: List[AmenityDTO]
+    cancellation_policies: List[RoomCancellationPolicyDTO]
+    days_before_cancellation: int
+    prepayment_policies: List[RoomPrepaymentPolicyDTO]
+    beds: List[RoomTypeBed]
+    cover_img: str
+    images: List[ImageDTO]
+
+
+@dataclass
+class EssentialHotelDTO:
+    id: int
+    name: str
+    today_check_ins: int
+    reservations_count: int
+
+
+@dataclass
+class ReservationDTO:
+    id: int
+    username: str
+    profile_pic: str
+    status: str
+    total_price: int
+
+
+@dataclass
+class DailyIncomeDTO:
+    date: date
+    income: int
+
+
+@dataclass
+class OwnerDashboardDTO:
+    hotels: List[EssentialHotelDTO]
+    reviews: List[ReviewDTO]
+    reservations: List[ReservationDTO]
+    daily_incomes: List[DailyIncomeDTO]

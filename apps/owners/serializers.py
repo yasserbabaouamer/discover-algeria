@@ -65,3 +65,9 @@ class OwnerProfileSerializer(OwnerProfileForAnyoneSerializer):
     class Meta:
         model = Owner
         fields = OwnerProfileForAnyoneSerializer.Meta.fields + ['role', 'birthday', 'phone', 'address']
+
+
+class OwnerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Owner
+        fields = ['id', 'first_name', 'last_name', 'profile_pic', 'status', 'created_at', 'country']

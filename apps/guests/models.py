@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import CheckConstraint, Q, Value
 
 from apps.destinations.models import Country
-from apps.users.enums import Currency
+from apps.users.enums import Currency, AccountStatus
 from apps.users.models import User
 
 
@@ -32,6 +32,7 @@ class Guest(models.Model):
     preferred_currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.DZD.value)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=255, choices=AccountStatus.choices, default=AccountStatus.ACTIVE)
     objects = GuestManager()
 
     class Meta:
@@ -40,5 +41,8 @@ class Guest(models.Model):
         constraints = [
             CheckConstraint(
                 check=Q(preferred_currency__in=list(Currency)), name='chk_pref_currency'
+            ),
+            CheckConstraint(
+                check=Q(status__in=list(AccountStatus)), name='chk_guest_status'
             )
         ]

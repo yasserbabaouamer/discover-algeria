@@ -1,15 +1,21 @@
 from datetime import datetime as _datetime
 from datetime import time
 
+import stripe
+from decouple import config
+from django.contrib.sites.shortcuts import get_current_site
 from django.db import transaction, connection
 from django.db.models import QuerySet
 from django.shortcuts import get_list_or_404, get_object_or_404
+from rest_framework import status
 from rest_framework.exceptions import ValidationError
 
-from apps.hotels.models import Reservation, ReservedRoomType, RoomAssignment, Language, HotelImage, HotelRules, \
-    ParkingSituation, RoomTypeImage, RoomTypeBed, RoomTypePolicies
+from apps.hotels.models import Reservation, ReservedRoomType, RoomAssignment, HotelImage, ParkingSituation, \
+    RoomTypeImage, BedType
+from core.utils import CustomException
 from .converters import *
-from .enums import HotelStatus, ReservationStatus, RoomTypeStatus, HotelCancellationPolicy
+from .enums import HotelStatus, ReservationStatus, RoomTypeStatus, HotelCancellationPolicy, RoomTypeEnum, \
+    RoomTypeCancellationPolicy, RoomTypePrepaymentPolicy, RoomStatus
 from .serializers import FilterRequestSerializer
 from ..destinations.models import Country
 from ..owners.models import Owner
@@ -92,6 +98,7 @@ def reserve_hotel_room(user: User, request: dict):
                     room=rooms_list[i],
                     reserved_room_type=reserved_room_type
                 )
+            return reservation.id
 
 
 def calculate_total_price(requested_room_types, nb_nights) -> int:
@@ -216,7 +223,7 @@ def delete_room_type(room_type_id: int):
     room_type.save()
 
 
-def update_hotel(hotel_id, form_data: dict):
+def update_hotel(request, hotel_id, form_data: dict):
     hotel_data: dict = form_data.get('body')
     hotel_info = hotel_data.get('hotel_info')
     hotel_rules = hotel_data.get('hotel_rules')
@@ -226,35 +233,38 @@ def update_hotel(hotel_id, form_data: dict):
     removed_staff_languages = get_list_or_404(Language, id__in=hotel_info.pop('removed_staff_languages'))
     added_amenities = get_list_or_404(Amenity, id__in=hotel_info.pop('added_facilities'))
     removed_amenities = get_list_or_404(Amenity, id__in=hotel_info.pop('removed_facilities'))
-    removed_images = get_list_or_404(HotelImage, id__in=[hotel_data.pop('removed_images_ids')])
-    added_images = form_data.get('added_images')
+    print('removed images ids :', hotel_data['removed_images_ids'])
+    removed_images = get_list_or_404(HotelImage, id__in=hotel_data['removed_images_ids'])
+    print("images to remove: ", removed_images)
+    added_images = form_data.get('added_images', [])
     cover_img = form_data.pop('cover_img', None)
     if cover_img is not None:
         hotel_info['cover_img'] = cover_img
     with transaction.atomic():
         hotel = Hotel.objects.find_with_rules_and_parking_and_images(hotel_id)
-        print('Hotel attrs :', dir(hotel))
-        # Update hotel information
-        for key, value in hotel_info.items():
-            setattr(hotel, key, value)
-        hotel.parking_available = parking_available
-        hotel.staff_languages.remove(*removed_staff_languages)
-        hotel.staff_languages.add(*added_staff_languages)
-        hotel.amenities.remove(*removed_amenities)
-        hotel.amenities.add(*added_amenities)
-        # Update hotel images
-        hotel.images.remove(*removed_images)
-        for image in added_images:
-            HotelImage.objects.create(hotel=hotel, img=image)
-        # Update hotel rules
-        for key, value in hotel_rules.items():
-            setattr(hotel.rules, key, value)
-        # Update hotel parking situation
-        for key, value in parking.items():
-            setattr(hotel.parking_situation, key, value)
-        hotel.save()
-        hotel.rules.save()
-        hotel.parking_situation.save()
+    print('Hotel attrs :', dir(hotel))
+    # Update hotel information
+    for key, value in hotel_info.items():
+        setattr(hotel, key, value)
+    hotel.parking_available = parking_available
+    hotel.staff_languages.remove(*removed_staff_languages)
+    hotel.staff_languages.add(*added_staff_languages)
+    hotel.amenities.remove(*removed_amenities)
+    hotel.amenities.add(*added_amenities)
+    # Update hotel images
+    hotel.images.remove(*removed_images)
+    print("added images are:", added_images)
+    for image in added_images:
+        HotelImage.objects.create(hotel=hotel, img=image)
+    # Update hotel rules
+    for key, value in hotel_rules.items():
+        setattr(hotel.rules, key, value)
+    # Update hotel parking situation
+    for key, value in parking.items():
+        setattr(hotel.parking_situation, key, value)
+    hotel.save()
+    hotel.rules.save()
+    hotel.parking_situation.save()
 
 
 def create_room_type(hotel_id: int, form_data: dict):
@@ -338,29 +348,41 @@ def handle_updated_bed_type_quantities(room_type_id, new_bed_type_quantities: di
 
 def update_room_type(room_type_id, form_data: dict):
     room_type = get_object_or_404(RoomType, pk=room_type_id)
-    room_type_info: dict = form_data.get('body')
+    update_info: dict = form_data.get('body')
     added_images = form_data.get('added_images', [])
-    removed_images_ids = room_type_info.get('removed_images', [])
-    print('We are here 1')
+    removed_images_ids = update_info.get('removed_images', [])
     removed_images = get_list_or_404(RoomTypeImage, id__in=removed_images_ids)
-    print('We are here 2')
-    added_amenities = get_list_or_404(Amenity, id__in=room_type_info.get('added_amenities', []))
-    removed_amenities = get_list_or_404(Amenity, id__in=room_type_info.get('removed_amenities', []))
-    bed_type_quantities = room_type_info['bed_type_quantities']
+    added_amenities = get_list_or_404(Amenity, id__in=update_info.get('added_amenities', []))
+    removed_amenities = get_list_or_404(Amenity, id__in=update_info.get('removed_amenities', []))
+    bed_type_quantities = update_info['bed_type_quantities']
     result = handle_updated_bed_type_quantities(room_type_id, bed_type_quantities)
     removed_bed_types = get_list_or_404(RoomTypeBed, bed_type_id__in=result['removed_bed_types'].keys())
     print('The pre removed bed types are :', removed_bed_types)
     with transaction.atomic():
         # Update room type information
-        room_type.name = room_type_info['type']
-        room_type.size = room_type_info.get('size')
-        room_type.price_per_night = room_type_info['price_per_night']
-        room_type.number_of_guests = room_type_info['number_of_guests']
+        room_type.name = update_info['type']
+        room_type.size = update_info.get('size')
+        room_type.price_per_night = update_info['price_per_night']
+        room_type.number_of_guests = update_info['number_of_guests']
         cover_img = form_data.pop('cover_img', None)
         if cover_img is not None:
             room_type.cover_img = cover_img
         room_type.amenities.remove(*removed_amenities)
         room_type.amenities.add(*added_amenities)
+
+        # update rooms associated with that type
+        old_rooms = Room.objects.filter(room_type=room_type, status=RoomStatus.VISIBLE)
+        if old_rooms.count() > update_info['number_of_rooms']:
+            count_of_deleted_rooms = old_rooms.count() - update_info['number_of_rooms']
+            for i in range(count_of_deleted_rooms):
+                room = get_object_or_404(Room, pk=old_rooms[i].id)
+                room.status = RoomStatus.DELETED.value
+                room.save()
+        if old_rooms.count() < update_info['number_of_rooms']:
+            count_of_added_rooms = update_info['number_of_rooms'] - old_rooms.count()
+            for i in range(count_of_added_rooms):
+                Room.objects.create(room_type=room_type)
+
         # Update room type images
         room_type.images.remove(*removed_images)
         for image in added_images:
@@ -368,6 +390,7 @@ def update_room_type(room_type_id, form_data: dict):
                 room_type=room_type,
                 image=image
             )
+
         # Update room type beds
         for room_bed_type in removed_bed_types:
             room_bed_type.delete()
@@ -377,15 +400,15 @@ def update_room_type(room_type_id, form_data: dict):
                 bed_type_id=bed_type_id,
                 quantity=quantity
             )
-
         for bed_type_id, quantities in result['updated_bed_types'].items():
             bed_type = get_object_or_404(RoomTypeBed, room_type=room_type, bed_type_id=bed_type_id)
             bed_type.quantity = quantities['new_quantity']
             bed_type.save()
+
         # Update room type policies
-        room_type.policies.cancellation_policy = room_type_info['cancellation_policy']
-        room_type.policies.days_before_cancellation = room_type_info.get('days_before_cancellation', 0)
-        room_type.policies.prepayment_policy = room_type_info['prepayment_policy']
+        room_type.policies.cancellation_policy = update_info['cancellation_policy']
+        room_type.policies.days_before_cancellation = update_info.get('days_before_cancellation', 0)
+        room_type.policies.prepayment_policy = update_info['prepayment_policy']
         room_type.policies.save()
         room_type.save()
 
@@ -399,36 +422,51 @@ def find_amenities_by_hotel_id(hotel_id):
     return Amenity.objects.find_amenities_by_hotel_id(hotel_id)
 
 
-def get_hotel_info_for_edit(hotel_id) -> HotelEditInfoDTO:
+def get_hotel_info_for_edit(request, hotel_id) -> HotelEditInfoDTO:
     hotel = Hotel.objects.select_related('rules').get(id=hotel_id)
     selected_cancellation_policy = hotel.rules.cancellation_policy
     selected_prepayment_policy = hotel.rules.prepayment_policy
     selected_parking_type = hotel.parking_situation.parking_type
+    current_site = get_current_site(request)
+    domain = f"http://{current_site.domain}"
     return HotelEditInfoDTO(
-        HotelInfoDTO(
-            hotel.country_code.country_code,
-            [CountryCodeDTO(country.id, country.name, country.country_code) for country in Country.objects.all()],
-            [BaseCityDTO(city.id, city.name) for city in City.objects.all()],
-            [FacilityDTO(facility.id, facility.name, facility.icon, facility.checked) for facility in
-             Amenity.objects.find_amenities_by_hotel_id(hotel.id)],
-            [StaffLanguageDTO(language.id, language.name, language.checked)
-             for language in Language.objects.find_languages_by_hotel_id(hotel_id)]
-        ),
-        HotelRulesDTO(
-            [get_cancellation_policy_dto(policy, selected_cancellation_policy) for policy in
-             HotelCancellationPolicy],
-            [HotelPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
-             for policy in HotelPrepaymentPolicy]
-        ),
-        HotelParkingSituationDTO(
-            [ParkingTypeDTO(parking_type, parking_type == selected_parking_type)
-             for parking_type in ParkingType]
-        )
+        hotel.id, hotel.name, hotel.stars, hotel.address, hotel.longitude, hotel.latitude,
+        hotel.website_url, domain + hotel.cover_img.url, hotel.about, hotel.business_email, hotel.contact_number,
+        hotel.city.id, hotel.city.country.id, hotel.country_code.id,
+        [CountryCodeDTO(country.id, country.name, country.country_code) for country in Country.objects.all()],
+        [BaseCityDTO(city.id, city.name) for city in City.objects.all()],
+        [AmenityDTO(facility.id, facility.name, domain + facility.icon.url, facility.checked)
+         for facility in Amenity.objects.find_amenities_by_hotel_id(hotel.id)],
+        [StaffLanguageDTO(language.id, language.name, language.checked)
+         for language in Language.objects.find_languages_by_hotel_id(hotel_id)],
+        hotel.rules.check_in_from, hotel.rules.check_in_until,
+        hotel.rules.check_out_from, hotel.rules.check_out_until,
+        [get_cancellation_policy_dto(policy, selected_cancellation_policy) for policy in
+         HotelCancellationPolicy], hotel.rules.days_before_cancellation,
+        [HotelPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
+         for policy in HotelPrepaymentPolicy],
+        hotel.parking_available,
+        hotel.parking_situation.reservation_needed,
+        [ParkingTypeDTO(parking_type, parking_type == selected_parking_type)
+         for parking_type in ParkingType],
+        [ImageDTO(image.id, domain + image.img.url) for image in hotel.images.all()]
     )
 
 
 def find_owner_dashboard_information(owner_id):
-    return None
+    review_converter = ReviewDtoConverter()
+    hotels = Hotel.objects.find_owner_hotels(owner_id)[:10]
+    latest_reservations = Reservation.objects.find_latest_reservations_to_owner_hotel(owner_id)
+    latest_reviews = GuestReview.objects.find_latest_reviews_relate_to_owner(owner_id)
+    return OwnerDashboardDTO(
+        [EssentialHotelDTO(hotel.id, hotel.name, hotel.check_ins_count, hotel.reservations_count)
+         for hotel in hotels],
+        review_converter.to_dtos_list(latest_reviews),
+        [ReservationDTO(reservation.id, f"{reservation.guest.first_name} {reservation.guest.last_name}",
+                        reservation.guest.profile_pic.url, reservation.status, reservation.total_price)
+         for reservation in latest_reservations],
+        []
+    )
 
 
 def get_essential_info_for_hotel_creation():
@@ -440,7 +478,7 @@ def get_essential_info_for_hotel_creation():
         [CountryDTO(country.id, country.name, False) for country in countries],
         [CityDTO(city.id, city.name, False, city.country.id) for city in cities],
         [StaffLanguageDTO(language.id, language.name, False) for language in languages],
-        [FacilityDTO(facility.id, facility.name, facility.icon.url, False) for facility in facilities],
+        [AmenityDTO(facility.id, facility.name, facility.icon.url, False) for facility in facilities],
         [HotelCancellationPolicyDTO(policy, False) for policy in HotelCancellationPolicy],
         [HotelPrepaymentPolicyDTO(policy, False) for policy in HotelPrepaymentPolicy],
         [ParkingTypeDTO(type, False) for type in ParkingType]
@@ -449,3 +487,69 @@ def get_essential_info_for_hotel_creation():
     obj.prepayment_policies[0].checked = True
     obj.parking_types[0].checked = True
     return obj
+
+
+def get_essential_info_for_room_creation():
+    return CreateRoomInfoDTO(
+        [room for room in RoomTypeEnum],
+        [AmenityDTO(amenity.id, amenity.name, amenity.icon.url, False) for amenity in
+         Amenity.objects.find_all_rooms_amenities()],
+        [RoomCancellationPolicyDTO(policy, False) for policy in RoomTypeCancellationPolicy],
+        [RoomPrepaymentPolicyDTO(policy, False) for policy in RoomTypePrepaymentPolicy],
+    )
+
+
+def get_room_info_for_edit(request, room_type_id):
+    room_type = RoomType.objects.find_by_id(room_type_id)
+    selected_cancellation_policy = room_type.policies.cancellation_policy
+    selected_prepayment_policy = room_type.policies.prepayment_policy
+    current_site = get_current_site(request)
+    domain = f"http://{current_site.domain}"
+    return RoomEditInfoDTO(
+        room_type.name, room_type.rooms_count, room_type.number_of_guests, room_type.price_per_night,
+        room_type.size, [_type for _type in RoomTypeEnum],
+        [AmenityDTO(amenity.id, amenity.name, domain + amenity.icon.url, amenity.checked)
+         for amenity in Amenity.objects.find_amenities_by_room_type_id(room_type_id)],
+        [RoomCancellationPolicyDTO(policy, policy == selected_cancellation_policy) for policy in
+         RoomTypeCancellationPolicy], room_type.policies.days_before_cancellation,
+        [RoomPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
+         for policy in RoomTypePrepaymentPolicy],
+        BedType.objects.find_all_beds_for_room_type(room_type_id),
+        domain + room_type.cover_img.url,
+        [ImageDTO(image.id, domain + image.image.url) for image in room_type.images.all()]
+    )
+
+
+def convert_dzd_to_usd(dzd_price):
+    conversion_rate = 150  # 1 USD = 150 DZD
+    usd_price = dzd_price / conversion_rate
+    return int(round(usd_price))
+
+
+def create_payment_intent(data: dict):
+    stripe.api_key = config('STRIPE_SECRET_KEY')
+    reservation = get_object_or_404(Reservation, pk=data['reservation_id'])
+    amount = convert_dzd_to_usd(reservation.total_price)
+    payment_intent = stripe.PaymentIntent.create(
+        amount=amount * 100,
+        currency='usd',
+        metadata={'reservation_id': data['reservation_id']},
+        payment_method_types=['card'],
+    )
+    return payment_intent
+
+
+def verify_payment_intent(data: dict):
+    success, detail = True, "success"
+    try:
+        intent = stripe.PaymentIntent.retrieve(data['payment_intent_id'])
+        print('intent status :', intent.status)
+        if intent.status != 'succeeded':
+            return False, 'Payment not successful'
+        # Case of successful payment
+        reservation = get_object_or_404(Reservation, pk=intent.metadata['reservation_id'])
+        reservation.status = ReservationStatus.CONFIRMED
+        reservation.save()
+    except stripe.error.StripeError as e:
+        return CustomException({'detail': e}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    return success, detail

@@ -9,4 +9,6 @@ urlpatterns = [
     path(APP_URL + 'setup-profile/', SetupGuestProfileForExistingUser.as_view()),
     path(APP_URL + 'profile/', ManageMyGuestProfile.as_view()),
     path(APP_URL + 'essential-info/', GetEssentialGuestInfo.as_view()),
+    path('admin/guests/', ListCreateGuests.as_view()),
+    path('admin/guests/<int:guest_id>', ManageGuestsView.as_view()),
 ]

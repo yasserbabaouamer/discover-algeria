@@ -9,4 +9,6 @@ urlpatterns = [
     path(APP_URL + 'profile/', ManageProfileView.as_view()),
     path(APP_URL + 'profile/<int:id>/', GetOwnerProfileForAnyone.as_view()),
     path(APP_URL + 'essential-info/', GetOwnerEssentials.as_view()),
+    path('admin/owners/', ListCreateOwners.as_view()),
+    path('admin/owners/<int:owner_id>', ManageOwnersView.as_view()),
 ]

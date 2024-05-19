@@ -11,6 +11,7 @@ from .models import *
 class RoomManager(models.Manager):
     def find_available_rooms_by_room_type(self, room_type_id: int, check_in: datetime, check_out: datetime) -> QuerySet:
         reserved_rooms = self.filter(
+            Q(status=RoomStatus.VISIBLE) &
             Q(room_type_id=room_type_id) &
             Q(assignments__reserved_room_type__reservation__status=ReservationStatus.CONFIRMED.value) |
             Q(assignments__reserved_room_type__reservation__status=ReservationStatus.ACTIVE.value)

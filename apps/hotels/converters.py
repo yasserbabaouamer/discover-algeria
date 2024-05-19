@@ -42,7 +42,7 @@ class BaseAmenityCategoryConverter:
     def to_dto(self, category, amenities) -> BaseAmenityCategory:
         return BaseAmenityCategory(
             category.id, category.name,
-            [AmenityDTO(amenity.id, amenity.name, amenity.icon.url) for amenity in amenities]
+            [BaseAmenityDTO(amenity.id, amenity.name, amenity.icon.url) for amenity in amenities]
         )
 
 
@@ -116,6 +116,14 @@ class HotelDashboardInfoDtoConverter:
 def get_cancellation_policy_dto(policy: str,
                                 selected_policy: str) -> HotelCancellationPolicyDTO:
     return HotelCancellationPolicyDTO(
+        policy=policy,
+        checked=(policy == selected_policy)
+    )
+
+
+def get_room_cancellation_policy_dto(policy: str,
+                                     selected_policy: str) -> RoomCancellationPolicyDTO:
+    return RoomCancellationPolicyDTO(
         policy=policy,
         checked=(policy == selected_policy)
     )

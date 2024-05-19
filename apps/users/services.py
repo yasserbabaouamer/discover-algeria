@@ -6,14 +6,16 @@ from threading import Thread
 import django.contrib.auth.password_validation
 import rest_framework
 from decouple import config
-from django.contrib.auth import password_validation
+from django.contrib.auth import password_validation, authenticate
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.db import transaction
-from rest_framework.exceptions import ValidationError
+from rest_framework import status
+from rest_framework.exceptions import ValidationError, AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
+from core.utils import CustomException
 from .models import User, ConfirmationCode, PasswordResetCode
 
 
@@ -163,3 +165,15 @@ def update_password(complete_request: dict):
     user.set_password(complete_request['new_password'])
     password_reset.is_token_used = True
     user.save()
+
+
+def login_admin(login_request: dict):
+    user: User = authenticate(email=login_request['email'], password=login_request['password'])
+    if user is not None:
+        if user.is_superuser:
+            refresh_token = RefreshToken.for_user(user)
+            return {
+                'access': str(refresh_token.access_token),
+                'refresh': str(refresh_token),
+            }
+    raise CustomException({'detail': 'Authentication failed, invalid information'}, status=status.HTTP_404_NOT_FOUND)

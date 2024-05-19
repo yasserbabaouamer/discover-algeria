@@ -11,7 +11,7 @@ class IsOwner(permissions.BasePermission):
         return False
 
     def has_object_permission(self, request, view, hotel):
-        return request.user.owner == hotel.owner
+        return request.user == hotel.owner.user
 
 
 class IsGuest(permissions.BasePermission):

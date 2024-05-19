@@ -13,6 +13,7 @@ from core.utils import CustomException
 from .dtos import *
 from .models import Owner
 from ..destinations.models import Country
+from ..users.enums import AccountStatus
 
 
 def authenticate_owner(login_request: dict) -> OwnerTokens | None:
@@ -58,3 +59,12 @@ def find_owner_essentials_info(_id):
 
 def find_owner_profile(owner_id):
     return Owner.objects.find_profile_by_id(owner_id)
+
+
+def find_all_owners():
+    return Owner.objects.all()
+
+
+def delete_owner(owner_id):
+    owner = get_object_or_404(Owner, id=owner_id)
+    owner.status = AccountStatus.DELETED_BY_ADMIN

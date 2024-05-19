@@ -121,10 +121,10 @@ class BedTypeSerializer(serializers.ModelSerializer):
 
 
 class RoomTypeBedSerializer(serializers.ModelSerializer):
-    bed_type = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
     icon = serializers.SerializerMethodField()
 
-    def get_bed_type(self, room_type_bed: RoomTypeBed):
+    def get_name(self, room_type_bed: RoomTypeBed):
         return room_type_bed.bed_type.name
 
     def get_icon(self, room_type_bed: RoomTypeBed):
@@ -132,7 +132,7 @@ class RoomTypeBedSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomTypeBed
-        fields = ['bed_type', 'quantity', 'icon']
+        fields = ['bed_type_id', 'name', 'quantity', 'icon']
 
 
 class RoomTypePolicySerializer(serializers.ModelSerializer):
@@ -325,11 +325,10 @@ class ReservationItemSerializer(serializers.ModelSerializer):
 
 class EssentialHotelInfoSerializer(serializers.ModelSerializer):
     check_ins = serializers.IntegerField()
-    check_outs = serializers.IntegerField()
 
     class Meta:
         model = Hotel
-        fields = ['id', 'name', 'check_ins', 'check_outs']
+        fields = ['id', 'name', 'check_ins']
 
 
 class EssentialReviewItemSerializer(serializers.ModelSerializer):
@@ -367,11 +366,14 @@ class DailyIncomeSerializer(serializers.Serializer):
     income = serializers.IntegerField()
 
 
-class OwnerDashboardSerializer(serializers.Serializer):
-    hotels = EssentialHotelInfoSerializer(many=True)
-    reviews = EssentialReviewItemSerializer(many=True)
-    reservations = EssentialReservationInfoSerializer(many=True)
-    daily_incomes = DailyIncomeSerializer(many=True)
+class OwnerDashboardSerializer(DataclassSerializer):
+    # hotels = EssentialHotelInfoSerializer(many=True)
+    # reviews = EssentialReviewItemSerializer(many=True)
+    # reservations = EssentialReservationInfoSerializer(many=True)
+    # daily_incomes = DailyIncomeSerializer(many=True)
+
+    class Meta:
+        dataclass = OwnerDashboardDTO
 
 
 class HotelDashboardInfoSerializer(DataclassSerializer):
@@ -408,7 +410,8 @@ class RoomTypeItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomType
-        fields = ['id', 'name', 'rooms_count', 'occupied_rooms_count', 'beds', 'categories']
+        fields = ['id', 'name', 'cover_img', 'price_per_night',
+                  'rooms_count', 'occupied_rooms_count', 'beds', 'categories']
 
 
 # Update Hotel Serializers
@@ -493,16 +496,16 @@ class UpdateHotelInfoSerializer(serializers.Serializer):
     city_id = serializers.IntegerField()
     stars = serializers.IntegerField(validators=[MaxValueValidator(5), MinValueValidator(1)])
     about = serializers.CharField(max_length=350)
-    added_staff_languages = serializers.ListField(child=serializers.IntegerField(), required=True)
-    removed_staff_languages = serializers.ListField(child=serializers.IntegerField(), required=True)
+    added_staff_languages = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
+    removed_staff_languages = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
     website = serializers.URLField(default=None)
     business_email = serializers.CharField(default=None)
     country_code_id = serializers.IntegerField()
     contact_number = serializers.IntegerField()
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
-    added_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
-    removed_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    added_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
+    removed_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
 
 
 class UpdateHotelRequestSerializer(serializers.Serializer):
@@ -515,7 +518,7 @@ class UpdateHotelRequestSerializer(serializers.Serializer):
 class UpdateHotelFormSerializer(serializers.Serializer):
     body = serializers.JSONField()
     cover_img = serializers.ImageField(required=False)
-    added_images = serializers.ListField(child=serializers.ImageField(), allow_empty=True)
+    added_images = serializers.ListField(child=serializers.ImageField(), required=False)
 
     def validate(self, data):
         update_hotel_req = UpdateHotelRequestSerializer(data=data.get('body'))
@@ -577,7 +580,7 @@ class CreateRoomTypeFormSerializer(serializers.Serializer):
 
 class UpdateRoomTypeRequestSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=RoomTypeEnum.choices)
-    number_of_rooms = serializers.IntegerField(validators=[MinValueValidator(1)]),
+    number_of_rooms = serializers.IntegerField(validators=[MinValueValidator(1)], required=True)
     number_of_guests = serializers.IntegerField(validators=[MinValueValidator(1)])
     bed_type_quantities = serializers.ListField(child=BedTypeQuantitySerializer(), allow_empty=False)
     size = serializers.FloatField(validators=[MinValueValidator(1)])
@@ -607,9 +610,11 @@ class UpdateRoomTypeFormSerializer(serializers.Serializer):
     added_images = serializers.ListField(child=serializers.ImageField(), required=False)
 
     def validate(self, data):
+        print('data which comes :', data.get('body'))
         update_request = UpdateRoomTypeRequestSerializer(data=data.get('body'))
         if not update_request.is_valid():
             raise serializers.ValidationError(update_request.errors)
+        print('validated data :', update_request.validated_data)
         return data
 
 
@@ -618,6 +623,136 @@ class HotelEditInfoDtoSerializer(DataclassSerializer):
         dataclass = HotelEditInfoDTO
 
 
+class HotelEditInfoSerializer(serializers.ModelSerializer):
+    current_city_id = serializers.IntegerField()
+    current_country_id = serializers.IntegerField()
+    current_country_code_id = serializers.IntegerField()
+    country_codes = serializers.ListField(child=serializers.DictField())
+    cities = serializers.ListField(child=serializers.DictField())
+    facilities = serializers.ListField(child=serializers.DictField())
+    staff_languages = serializers.ListField(child=serializers.DictField())
+    check_in_from = serializers.DateTimeField()
+    check_in_until = serializers.DateTimeField()
+    check_out_from = serializers.DateTimeField()
+    check_out_until = serializers.DateTimeField()
+    cancellation_policies = serializers.ListField(child=serializers.DictField())
+    days_before_cancellation = serializers.IntegerField()
+    prepayment_policies = serializers.ListField(child=serializers.DictField())
+    parking_available = serializers.BooleanField()
+    reservation_needed = serializers.BooleanField()
+    parking_types = serializers.ListField(child=serializers.DictField())
+    images = serializers.ListField(child=serializers.CharField())
+
+    def get_current_city_id(self, obj):
+        return obj.city.id
+
+    def get_current_country_id(self, obj):
+        return obj.city.country.id
+
+    def get_current_country_code_id(self, obj):
+        return obj.country_code.id
+
+    def get_country_codes(self, obj):
+        return obj
+
+    def get_cities(self, obj):
+        # Logic to get display value for cities
+        pass
+
+    def get_facilities(self, obj):
+        # Logic to get display value for facilities
+        pass
+
+    def get_staff_languages(self, obj):
+        # Logic to get display value for staff languages
+        pass
+
+    def get_check_in_from(self, obj):
+        # Logic to get display value for check-in from datetime
+        pass
+
+    def get_check_in_until(self, obj):
+        # Logic to get display value for check-in until datetime
+        pass
+
+    def get_check_out_from(self, obj):
+        # Logic to get display value for check-out from datetime
+        pass
+
+    def get_check_out_until(self, obj):
+        # Logic to get display value for check-out until datetime
+        pass
+
+    def get_cancellation_policies(self, obj):
+        # Logic to get display value for cancellation policies
+        pass
+
+    def get_days_before_cancellation(self, obj):
+        # Logic to get display value for days before cancellation
+        pass
+
+    def get_prepayment_policies(self, obj):
+        # Logic to get display value for prepayment policies
+        pass
+
+    def get_parking_available(self, obj):
+        # Logic to get display value for parking availability
+        pass
+
+    def get_reservation_needed(self, obj):
+        # Logic to get display value for reservation needed
+        pass
+
+    def get_parking_types(self, obj):
+        # Logic to get display value for parking types
+        pass
+
+    def get_images(self, obj):
+        # Logic to get display value for images
+        pass
+
+    class Meta:
+        model = Hotel
+        fields = [
+            'id', 'name', 'stars', 'address', 'longitude', 'latitude', 'website_url',
+            'cover_img', 'about', 'business_email', 'contact_number', 'current_city_id',
+            'current_country_id', 'current_country_code_id', 'country_codes', 'cities',
+            'facilities', 'staff_languages', 'check_in_from', 'check_in_until',
+            'check_out_from', 'check_out_until', 'cancellation_policies',
+            'days_before_cancellation', 'prepayment_policies', 'parking_available',
+            'reservation_needed', 'parking_types', 'images'
+        ]
+
+
 class HotelCreateInfoDtoSerializer(DataclassSerializer):
     class Meta:
         dataclass = HotelCreateInfoDTO
+
+
+class CreateRoomInfoDtoSerializer(DataclassSerializer):
+    class Meta:
+        dataclass = CreateRoomInfoDTO
+
+
+class BedTypeWithDefaultsSerializer(serializers.ModelSerializer):
+    quantity = serializers.IntegerField()
+    bed_type_id = serializers.IntegerField(source='id')
+
+    class Meta:
+        model = BedType
+        fields = ['bed_type_id', 'name', 'icon', 'length', 'width', 'quantity']
+
+
+class RoomEditInfoDtoSerializer(DataclassSerializer):
+    beds = BedTypeWithDefaultsSerializer(many=True)
+
+    class Meta:
+        dataclass = RoomEditInfoDTO
+
+
+class PaymentRequestSerializer(serializers.Serializer):
+    reservation_id = serializers.IntegerField()
+
+
+class VerifyPaymentRequestSerializer(serializers.Serializer):
+    payment_intent_id = serializers.CharField(max_length=255)

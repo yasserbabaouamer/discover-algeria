@@ -1,3 +1,8 @@
+import configparser
+
+import stripe
+from decouple import config
+from django.shortcuts import redirect, get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiRequest
 from jsonschema.exceptions import ValidationError
 from rest_framework import status
@@ -8,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import services, serializers
+from .models import Reservation
 from .permissions import IsOwner, IsGuest
 
 
@@ -100,8 +106,11 @@ class CreateReservationView(APIView):
     def post(self, request):
         reservation_request = serializers.RoomReservationRequestSerializer(data=request.data)
         if reservation_request.is_valid():
-            services.reserve_hotel_room(self.request.user, reservation_request.validated_data)
-            return Response({'detail': "Your reservation has been created successfully"}, status.HTTP_201_CREATED)
+            reservation_id = services.reserve_hotel_room(self.request.user, reservation_request.validated_data)
+            return Response({
+                'detail': "Your reservation has been created successfully, Complete the payment",
+                'reservation_id': reservation_id
+            }, status.HTTP_201_CREATED)
         raise ValidationError(detail=reservation_request.errors)
 
 
@@ -151,9 +160,15 @@ class GetAllAmenities(APIView):
 class GetOwnerDashboardInfo(APIView):
     permission_classes = [IsOwner]
 
+    @extend_schema(
+        tags=['Owner Dashboard'],
+        summary='Get owner dashboard',
+        responses=serializers.OwnerDashboardSerializer
+    )
     def get(self, request, *args, **kwargs):
         dashboard_info = services.find_owner_dashboard_information(request.user.owner.id)
-        pass
+        response = serializers.OwnerDashboardSerializer(dashboard_info)
+        return Response(response.data)
 
 
 class ListCreateOwnerHotelView(APIView):
@@ -190,7 +205,6 @@ class ListCreateOwnerHotelView(APIView):
 
 
 class GetHotelEditInformation(APIView):
-    authentication_classes = []
     permission_classes = [IsOwner]
 
     @extend_schema(
@@ -205,7 +219,7 @@ class GetHotelEditInformation(APIView):
         if hotel_id is None:
             raise ValidationError({'detail': 'Provide a hotel id'})
         self.check_object_permissions(request, services.find_hotel_by_id(hotel_id))
-        hotel_edit_info = services.get_hotel_info_for_edit(hotel_id)
+        hotel_edit_info = services.get_hotel_info_for_edit(request, hotel_id)
         response = serializers.HotelEditInfoDtoSerializer(hotel_edit_info)
         return Response(data=response.data, status=status.HTTP_200_OK)
 
@@ -247,12 +261,11 @@ class ManageOwnerHotelDetailsView(APIView):
     @extend_schema(
         summary='Update Hotel - Owner',
         tags=['Owner Dashboard'],
-        request=[
-            OpenApiRequest(request=serializers.UpdateHotelFormSerializer),
-            OpenApiRequest(request=serializers.UpdateHotelRequestSerializer)
-        ],
+        request=OpenApiRequest(request=serializers.UpdateHotelFormSerializer),
         responses={
-            200: OpenApiResponse(description='Hotel updated successfully')
+            200: OpenApiResponse(description='Hotel updated successfully'),
+            500: OpenApiResponse(description='This is what to send in the body of form data',
+                                 response=serializers.UpdateHotelRequestSerializer)
         }
     )
     def post(self, request, *args, **kwargs):
@@ -264,7 +277,7 @@ class ManageOwnerHotelDetailsView(APIView):
         update_request = serializers.UpdateHotelFormSerializer(data=self.request.data)
         if not update_request.is_valid():
             raise ValidationError(update_request.errors)
-        services.update_hotel(hotel_id, update_request.validated_data)
+        services.update_hotel(request, hotel_id, update_request.validated_data)
         return Response(data={'detail': "Your hotel has been updated successfully"},
                         status=status.HTTP_200_OK)
 
@@ -393,8 +406,8 @@ class ManageHotelRoomType(APIView):
         tags=['Owner Dashboard'],
         request=serializers.UpdateRoomTypeFormSerializer,
         responses={
-            100: OpenApiResponse(description="This is what you have to send in the request"
-                , response=serializers.UpdateRoomTypeRequestSerializer),
+            100: OpenApiResponse(description="This is what you have to send in the request",
+                                 response=serializers.UpdateRoomTypeRequestSerializer),
             200: OpenApiResponse(description='Successful update')
         }
     )
@@ -414,7 +427,7 @@ class ManageHotelRoomType(APIView):
         summary='Delete Room type',
         tags=['Owner Dashboard'],
         responses={
-            200: OpenApiResponse(description="Room type deleted successfully")
+            204: OpenApiResponse(description="Room type deleted successfully")
         }
     )
     def delete(self, request, *args, **kwargs):
@@ -425,3 +438,67 @@ class ManageHotelRoomType(APIView):
         self.check_object_permissions(request, room_type.hotel)
         services.delete_room_type(room_type_id)
         return Response({'detail': "The room type has been deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+class GetCreateRoomInformation(APIView):
+    permission_classes = [IsOwner]
+
+    @extend_schema(
+        tags=['Owner Dashboard'],
+        summary='Get Create Room Information',
+        responses=serializers.CreateRoomInfoDtoSerializer
+    )
+    def get(self, request, *args, **kwargs):
+        info = services.get_essential_info_for_room_creation()
+        response = serializers.CreateRoomInfoDtoSerializer(info)
+        return Response(response.data)
+
+
+class GetEditRoomInformation(APIView):
+    permission_classes = [IsOwner]
+
+    @extend_schema(
+        tags=['Owner Dashboard'],
+        summary='Get Edit Room Information',
+        responses=serializers.RoomEditInfoDtoSerializer
+    )
+    def get(self, request, *args, **kwargs):
+        room_type_id = kwargs.get('room_type_id', None)
+        if room_type_id is None:
+            raise ValidationError({'detail': 'provide a room type id'})
+        self.check_object_permissions(request, services.find_room_type_by_id(room_type_id).hotel)
+        info = services.get_room_info_for_edit(request, room_type_id)
+        response = serializers.RoomEditInfoDtoSerializer(info)
+        return Response(response.data)
+
+
+class GetStripPublicKey(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, *args, **kwargs):
+        return Response({'public_key': config('STRIPE_PUBLIC_KEY')})
+
+
+class CreatePaymentIntentView(APIView):
+    permission_classes = [IsGuest]
+
+    def post(self, request, *args, **kwargs):
+        payment_request = serializers.PaymentRequestSerializer(data=self.request.data)
+        if not payment_request.is_valid():
+            raise ValidationError({'detail': 'Provide a reservation id first'})
+        payment_intent = services.create_payment_intent(payment_request.validated_data)
+        return Response({
+            'client_secret': payment_intent['client_secret']
+        })
+
+
+class VerifyPaymentView(APIView):
+    permission_classes = [IsGuest]
+
+    def post(self, _request, *args, **kwargs):
+        request = serializers.VerifyPaymentRequestSerializer(data=self.request.data)
+        if not request.is_valid():
+            raise ValidationError({'detail': 'Provide a payment intent id'})
+        success, detail = services.verify_payment_intent(request.validated_data)
+        return Response({'success': success, 'detail': detail})

@@ -14,7 +14,7 @@ from apps.destinations.models import City, Country
 from apps.guests.models import Guest
 from apps.hotels.enums import ReservationStatus, HotelCancellationPolicy, ParkingType, HotelPrepaymentPolicy, \
     HotelStatus, \
-    RoomTypeEnum, RoomTypeStatus, RoomTypeCancellationPolicy, RoomTypePrepaymentPolicy
+    RoomTypeEnum, RoomTypeStatus, RoomTypeCancellationPolicy, RoomTypePrepaymentPolicy, RoomStatus
 from . import managers
 from ..owners.models import Owner
 
@@ -47,7 +47,19 @@ class AmenityManager(models.Manager):
                 When(id__in=hotel.amenities.values_list('id', flat=True), then=True),
                 default=False
             )
-        ).all()
+        ).filter(category__name='Facilities').all()
+
+    def find_all_rooms_amenities(self):
+        return self.filter(~Q(category__name='Facilities'))
+
+    def find_amenities_by_room_type_id(self, room_type_id):
+        room_type = RoomType.objects.find_by_id(room_type_id)
+        return self.annotate(
+            checked=Case(
+                When(id__in=room_type.amenities.values_list('id', flat=True), then=True),
+                default=False
+            )
+        ).filter(~Q(category__name='Facilities')).all()
 
 
 class Amenity(models.Model):
@@ -98,7 +110,7 @@ class HotelManager(models.Manager):
             average=ExpressionWrapper(F('rating_avg') * self.w1 + F('reviews_count') * self.w2 +
                                       F('reservations_count') * self.w3 + F('revenue') * self.w4,
                                       output_field=models.FloatField())
-        ).order_by('-average').all()[:6]
+        ).filter(status=HotelStatus.VISIBLE).order_by('-average').all()[:6]
 
     def find_by_id(self, hotel_id: int):
         try:
@@ -106,7 +118,7 @@ class HotelManager(models.Manager):
                 rating_avg=SubqueryAvg('reservations__review__rating'),
                 reviews_count=SubqueryCount('reservations__review'),
                 starts_at=SubqueryMin('room_types__price_per_night'),
-            ).prefetch_related('owner').get(pk=hotel_id))
+            ).prefetch_related('owner').get(pk=hotel_id, status=HotelStatus.VISIBLE))
         except ObjectDoesNotExist as e:
             raise NotFound({'detail': 'No Such Hotel with this id'})
 
@@ -118,7 +130,8 @@ class HotelManager(models.Manager):
                 output_field=FloatField(),
             )
         ).filter(
-            Q(name_ratio__gt=0.3)
+            Q(name_ratio__gt=0.3),
+            status=HotelStatus.VISIBLE
         ).order_by('-name_ratio')
         return result.all()
 
@@ -132,6 +145,7 @@ class HotelManager(models.Manager):
                                            price_per_night__lte=price_ends_at)),
         ).filter(
             city_id=city_id,
+            status=HotelStatus.VISIBLE,
             starts_at__gte=price_starts_at,
             starts_at__lte=price_ends_at,
         ).all()
@@ -157,10 +171,13 @@ class HotelManager(models.Manager):
             rating_avg=Coalesce(SubqueryAvg('reservations__review__rating'), Value(0)),
             reviews_count=SubqueryCount('reservations__review'),
             starts_at=SubqueryMin('room_types__price_per_night'),
-        ).filter(city_id=city_id).order_by('-reviews_count').all())
+        ).filter(city_id=city_id, status=HotelStatus.VISIBLE).order_by('-reviews_count').all())
 
     def find_owner_hotels(self, owner: Owner):
-        return self.filter(owner=owner).annotate(
+        return self.filter(
+            owner=owner,
+            status=HotelStatus.VISIBLE
+        ).annotate(
             reviews_count=SubqueryCount('reservations__review'),
             rating_avg=Coalesce(SubqueryAvg('reservations__review__rating'), Value(0)),
             reservations_count=SubqueryCount('reservations'),
@@ -172,12 +189,13 @@ class HotelManager(models.Manager):
                                                                    ReservationStatus.CANCELLED_BY_OWNER])),
             revenue=Coalesce(SubquerySum('reservations__total_price',
                                          filter=Q(status=ReservationStatus.COMPLETED)), Value(0)),
-            rooms_count=SubqueryCount('room_types__rooms'),
+            rooms_count=SubqueryCount('room_types__rooms',
+                                      filter=Q(status=RoomStatus.VISIBLE)),
             occupied_rooms_count=SubqueryCount(
                 'reservations__reserved_room_types__assigned_rooms__room_id',
                 filter=Q(reserved_room_type__reservation__status=ReservationStatus.ACTIVE)
             )
-        )
+        ).order_by('-revenue')
 
     def count_owner_profits_in(self, owner: Owner, date) -> dict:
         return self.filter(
@@ -200,9 +218,9 @@ class HotelManager(models.Manager):
             reviews_count=SubqueryCount('reservations__review'),
         ).prefetch_related(
             Prefetch('room_types',
-                     queryset=RoomType.objects.filter(hotel_id=hotel_id)
+                     queryset=RoomType.objects.filter(hotel_id=hotel_id, status=RoomTypeStatus.VISIBLE)
                      .annotate(
-                         rooms_count=SubqueryCount('rooms'),
+                         rooms_count=SubqueryCount('rooms', filter=Q(status=RoomStatus.VISIBLE)),
                          occupied_rooms_count=SubqueryCount(
                              'reserved_room_types__assigned_rooms__room_id',
                              filter=Q(reserved_room_type__reservation__status=ReservationStatus.ACTIVE)
@@ -213,7 +231,7 @@ class HotelManager(models.Manager):
                                               Q(reservation__check_out__month=datetime.today().month - 1)
                                        )
                      ))
-        ).get(pk=hotel_id)
+        ).get(pk=hotel_id, status=HotelStatus.VISIBLE)
 
     def find_with_rules_and_parking_and_images(self, hotel_id):
         try:
@@ -304,11 +322,28 @@ class ParkingSituation(models.Model):
         ]
 
 
+class BedTypeManager(models.Manager):
+    def find_all_beds_for_room_type(self, room_type_id):
+        # Subquery to get the quantity of beds for the specific room type
+        room_type_bed_subquery = RoomTypeBed.objects.filter(
+            bed_type=OuterRef('pk'),
+            room_type_id=room_type_id  # Use the specific RoomType id
+        ).values('quantity')[:1]
+        # Query to get all BedTypes with default values for RoomTypeBed fields
+        bed_types_with_defaults = BedType.objects.annotate(
+            quantity=Coalesce(Subquery(room_type_bed_subquery), Value(0))
+        )
+        for bed_type in bed_types_with_defaults:
+            print(f"Bed Type: {bed_type.name}, Quantity: {bed_type.quantity}")
+        return bed_types_with_defaults
+
+
 class BedType(models.Model):
     name = models.CharField(max_length=50)
     icon = models.ImageField(upload_to='accommodations/bed_types/', null=True)
     length = models.IntegerField(null=True)
     width = models.IntegerField(null=True)
+    objects = BedTypeManager()
 
     class Meta:
         db_table = 'bed_types'
@@ -318,7 +353,9 @@ class RoomTypeManager(models.Manager):
 
     def find_by_id(self, room_type_id):
         try:
-            return self.get(pk=room_type_id)
+            return self.annotate(
+                rooms_count=Count('rooms', filter=Q(rooms__status=RoomStatus.VISIBLE))
+            ).get(pk=room_type_id, status=RoomTypeStatus.VISIBLE)
         except ObjectDoesNotExist as e:
             raise NotFound({'detail': 'No such room type with this id'})
 
@@ -339,9 +376,10 @@ class RoomTypeManager(models.Manager):
     def find_room_types_by_hotel_id(self, hotel_id: int):
         room_types = self.filter(
             hotel=hotel_id,
+            status=RoomTypeStatus.VISIBLE
         ).annotate(
             starts_at=Min('price_per_night'),
-            rooms_count=SubqueryCount('rooms'),
+            rooms_count=SubqueryCount('rooms', filter=Q(status=RoomStatus.VISIBLE)),
             occupied_rooms_count=SubqueryCount(
                 'reserved_room_types__assigned_rooms__room_id',
                 filter=Q(reserved_room_type__reservation__status=ReservationStatus.ACTIVE)
@@ -358,7 +396,7 @@ class RoomTypeManager(models.Manager):
         return room_types
 
     def find_available_room_types_by_hotel_id(self, hotel_id, check_in, check_out):
-        room_types = self.filter(hotel_id=hotel_id).all()
+        room_types = self.filter(hotel_id=hotel_id, status=RoomTypeStatus.VISIBLE).all()
         available_room_types = []
         for room_type in room_types:
             room_type.available_rooms_count = len(
@@ -437,10 +475,16 @@ class Room(models.Model):
     code = models.IntegerField(null=True)
     description = models.CharField(max_length=255, null=True)
     room_type = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name='rooms')
+    status = models.CharField(max_length=255, choices=RoomStatus.choices, default=RoomStatus.VISIBLE)
     objects = managers.RoomManager()
 
     class Meta:
         db_table = 'rooms'
+        constraints = [
+            CheckConstraint(
+                check=Q(status__in=list(RoomStatus)), name='chk_room_status'
+            )
+        ]
 
 
 class ReservationManager(models.Manager):
@@ -453,26 +497,10 @@ class ReservationManager(models.Manager):
             hotel=hotel, status=ReservationStatus.CONFIRMED.value
         )
 
-    def get_hotel_reservations_subquery(self):
-        return (self.filter(
-            hotel=OuterRef('pk')  # reference the PK of the outer query
-        ).annotate(
-            reservations_count=Count('id'),
-            revenue=Sum('total_price',
-                        filter=Q(status=ReservationStatus.COMPLETED),
-                        ),
-            check_ins_count=Count('pk',
-                                  filter=Q(status__in=[ReservationStatus.ACTIVE, ReservationStatus.COMPLETED])
-                                  ),
-            cancellations_count=Count('pk',
-                                      filter=Q(status__in=[ReservationStatus.CANCELLED_BY_OWNER,
-                                                           ReservationStatus.CANCELLED_BY_GUEST]),
-                                      ),
-            completed_count=Count('pk',
-                                  filter=Q(status=ReservationStatus.COMPLETED.value),
-                                  # default=0
-                                  )
-        ))
+    def find_latest_reservations_to_owner_hotel(self, owner_id):
+        return self.filter(
+            hotel__owner_id=owner_id
+        ).order_by('-created_at')
 
     def find_reservations_by_hotel_id(self, hotel, filters: dict):
         qs = self.filter(
@@ -578,6 +606,11 @@ class GuestReviewManager(models.Manager):
         ).annotate(
             rating_avg=Avg('rating'),
             reviews_count=Count('id')
+        )
+
+    def find_latest_reviews_relate_to_owner(self, owner_id):
+        return self.filter(
+            reservation__hotel__owner_id=owner_id
         )
 
 

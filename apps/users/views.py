@@ -160,3 +160,23 @@ class CompletePasswordResetView(APIView):
                 status=status.HTTP_200_OK
             )
         raise ValidationError(complete_request.errors)
+
+
+class LoginAdminView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(
+        summary='Login admin',
+        request=serializers.LoginAdminRequestSerializer,
+        responses={
+            200: 'access and refresh will be served',
+            404: 'When the information are invalid'
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        login_request = serializers.LoginAdminRequestSerializer(data=self.request.data)
+        if not login_request.is_valid():
+            raise ValidationError(login_request.errors)
+        tokens = services.login_admin(login_request.data)
+        return Response(data=tokens)

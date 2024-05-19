@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.parsers import MultiPartParser, JSONParser
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -28,14 +29,13 @@ class LoginOwnerView(APIView):
     def post(self, request, *args, **kwargs):
         login_request = serializers.OwnerLoginRequestSerializer(data=self.request.data)
         if login_request.is_valid():
-            if login_request.is_valid():
-                result = services.authenticate_owner(login_request.validated_data)
-                if isinstance(result, OwnerTokens):
-                    response = serializers.OwnerTokensSerializer(result)
-                    return Response(data=response.data, status=status.HTTP_200_OK)
-                else:
-                    return Response(data={'detail': 'Confirmation code sent successfully'},
-                                    status=status.HTTP_201_CREATED)
+            result = services.authenticate_owner(login_request.validated_data)
+            if isinstance(result, OwnerTokens):
+                response = serializers.OwnerTokensSerializer(result)
+                return Response(data=response.data, status=status.HTTP_200_OK)
+            else:
+                return Response(data={'detail': 'Confirmation code sent successfully'},
+                                status=status.HTTP_201_CREATED)
         raise ValidationError(login_request.errors)
 
 
@@ -116,3 +116,40 @@ class GetOwnerProfileForAnyone(APIView):
         profile = services.find_owner_profile(owner_id)
         response = serializers.OwnerProfileForAnyoneSerializer(profile)
         return Response(response.data)
+
+
+class ListCreateOwners(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='Get list of owners',
+        responses=serializers.OwnerSerializer
+    )
+    def get(self, request, *args, **kwargs):
+        owners = services.find_all_owners()
+        response = serializers.OwnerSerializer(owners, many=True)
+        return Response(response.data)
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='Create new owner - not implemented',
+    )
+    def post(self, request, *args, **kwargs):
+        pass
+
+
+class ManageOwnersView(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='Delete an owner',
+    )
+    def delete(self, request, *args, **kwargs):
+        owner_id = kwargs.pop('owner_id', None)
+        if owner_id is None:
+            raise ValidationError({'detail': 'provide an owner id'})
+        services.delete_owner(owner_id)
+        return Response({'detail': 'The account has been deleted successfully'},
+                        status=status.HTTP_204_NO_CONTENT)

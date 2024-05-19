@@ -71,3 +71,18 @@ class EssentialGuestInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Guest
         fields = ['id', 'first_name', 'last_name', 'profile_pic', 'email']
+
+
+class GuestSerializer(serializers.ModelSerializer):
+    country = CountrySerializer()
+
+    class Meta:
+        model = Guest
+        fields = ['id', 'first_name', 'last_name', 'profile_pic', 'status', 'created_at', 'country']
+
+
+class CreateGuestRequestSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=255)
+    last_name = serializers.CharField(max_length=255)
+    email = serializers.EmailField()
+    password = serializers.CharField(max_length=255)

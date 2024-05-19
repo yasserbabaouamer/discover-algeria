@@ -1,7 +1,9 @@
+import stripe
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -102,3 +104,41 @@ class ManageMyGuestProfile(APIView):
     )
     def put(self, request, *args, **kwargs):
         pass
+
+
+class ListCreateGuests(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='Get list of guests',
+        responses=serializers.GuestSerializer
+    )
+    def get(self, request, *args, **kwargs):
+        guests = services.find_all_guests()
+        response = serializers.GuestSerializer(guests, many=True)
+        return Response(response.data)
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='Create new guest - not implemented yet',
+        responses=serializers.CreateGuestRequestSerializer
+    )
+    def post(self, request, *args, **kwargs):
+        pass
+
+
+class ManageGuestsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        tags=['Admin'],
+        summary='Delete a guest',
+    )
+    def delete(self, request, *args, **kwargs):
+        guest_id = kwargs.pop('guest_id', None)
+        if guest_id is None:
+            raise ValidationError({'detail': 'provide a guest id'})
+        services.delete_guest(guest_id)
+        return Response({'detail': 'The account has been deleted successfully'},
+                        status=status.HTTP_204_NO_CONTENT)

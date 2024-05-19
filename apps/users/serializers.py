@@ -39,3 +39,8 @@ class ConfirmationCodeRequestSerializer(rest_serializers.Serializer):
 class CompletePasswordResetRequestSerializer(rest_serializers.Serializer):
     token = rest_serializers.UUIDField()
     new_password = rest_serializers.CharField(max_length=255)
+
+
+class LoginAdminRequestSerializer(rest_serializers.Serializer):
+    email = rest_serializers.CharField(max_length=255)
+    password = rest_serializers.CharField(max_length=255)

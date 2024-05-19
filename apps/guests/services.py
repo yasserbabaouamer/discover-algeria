@@ -10,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from .dtos import GuestTokens
 from .models import Guest, User
 from apps.users.services import generate_and_send_confirmation_code
+from ..users.enums import AccountStatus
 
 
 def authenticate_guest(login_request: dict) -> GuestTokens | None:
@@ -58,3 +59,12 @@ def find_guest_by_id(guest_id):
 
 def find_guest_profile(guest_id):
     return Guest.objects.find_guest_profile(guest_id)
+
+
+def find_all_guests():
+    return Guest.objects.all()
+
+
+def delete_guest(guest_id):
+    guest = get_object_or_404(Guest, id=guest_id)
+    guest.status = AccountStatus.DELETED_BY_ADMIN.value

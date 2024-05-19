@@ -2,6 +2,7 @@ from django.db import models
 
 
 class ReservationStatus(models.TextChoices):
+    UNCOMPLETED = 'Uncompleted'
     CONFIRMED = 'Confirmed'
     ACTIVE = 'Active'
     CANCELLED_BY_OWNER = 'Cancelled By Owner'
@@ -73,3 +74,9 @@ class RoomTypeCancellationPolicy(models.TextChoices):
 class RoomTypePrepaymentPolicy(models.TextChoices):
     NOT_REQUIRED = 'Prepayment is not required'
     REQUIRED = 'Prepayment is required'
+
+
+class RoomStatus(models.TextChoices):
+    VISIBLE = 'Visible'
+    HIDDEN = 'Hidden'
+    DELETED = 'Deleted'
