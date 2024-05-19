@@ -13,6 +13,7 @@ from . import serializers
 from . import services
 from .dtos import GuestTokens
 from ..hotels.permissions import IsGuest
+from ..users.permissions import IsAdmin
 
 
 class LoginGuestView(APIView):
@@ -107,7 +108,7 @@ class ManageMyGuestProfile(APIView):
 
 
 class ListCreateGuests(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     @extend_schema(
         tags=['Admin'],
@@ -129,7 +130,7 @@ class ListCreateGuests(APIView):
 
 
 class ManageGuestsView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     @extend_schema(
         tags=['Admin'],

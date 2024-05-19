@@ -68,6 +68,8 @@ class OwnerProfileSerializer(OwnerProfileForAnyoneSerializer):
 
 
 class OwnerSerializer(serializers.ModelSerializer):
+    country = CountrySerializer()
+
     class Meta:
         model = Owner
         fields = ['id', 'first_name', 'last_name', 'profile_pic', 'status', 'created_at', 'country']

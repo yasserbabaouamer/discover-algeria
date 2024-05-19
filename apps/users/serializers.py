@@ -44,3 +44,11 @@ class CompletePasswordResetRequestSerializer(rest_serializers.Serializer):
 class LoginAdminRequestSerializer(rest_serializers.Serializer):
     email = rest_serializers.CharField(max_length=255)
     password = rest_serializers.CharField(max_length=255)
+
+
+class AdminProfileSerializer(rest_serializers.Serializer):
+    access = rest_serializers.CharField(max_length=255)
+    refresh = rest_serializers.CharField(max_length=255)
+    email = rest_serializers.EmailField()
+    profile_pic = rest_serializers.ImageField(default='users/defaults/default_profile_pic.jpg')
+

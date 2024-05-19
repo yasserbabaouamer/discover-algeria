@@ -10,6 +10,7 @@ from core.utils import CustomException
 from . import serializers, services
 from .dtos import OwnerTokens
 from .permissions import *
+from ..users.permissions import IsAdmin
 
 
 class LoginOwnerView(APIView):
@@ -119,7 +120,7 @@ class GetOwnerProfileForAnyone(APIView):
 
 
 class ListCreateOwners(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     @extend_schema(
         tags=['Admin'],
@@ -140,7 +141,7 @@ class ListCreateOwners(APIView):
 
 
 class ManageOwnersView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     @extend_schema(
         tags=['Admin'],
