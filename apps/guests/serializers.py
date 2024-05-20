@@ -41,7 +41,6 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_role(self, guest: Guest):
         return "guest"
 
-    @extend_schema_field(OpenApiTypes)
     def get_reservations(self, guest: Guest):
         return [
             {
@@ -62,7 +61,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                     } for reserved_room_type in reservation.reserved_room_types.all()
                 ]
             } for reservation in guest.reservations.all()
-        ]
+        ] if guest.reservations.count() > 0 else None
 
     class Meta:
         model = Guest
@@ -94,8 +93,19 @@ class GuestSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'profile_pic', 'status', 'created_at', 'country']
 
 
-class CreateGuestRequestSerializer(serializers.Serializer):
+class BaseGuestInfoSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=255)
     last_name = serializers.CharField(max_length=255)
+    birthday = serializers.DateField(required=False)
+    country_code_id = serializers.IntegerField(required=False)
+    phone = serializers.IntegerField(required=False)
+    country_id = serializers.IntegerField(required=False)
+
+
+class CreateGuestRequestSerializer(BaseGuestInfoSerializer):
     email = serializers.EmailField()
     password = serializers.CharField(max_length=255)
+
+
+class UpdateGuestRequestSerializer(BaseGuestInfoSerializer):
+    pass

@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from . import services, serializers
 from .models import Reservation
-from .permissions import IsOwner, IsGuest
+from .permissions import IsOwner, IsGuestOrAdmin
 
 
 class GetTopHotelsView(APIView):
@@ -93,7 +93,7 @@ class GetHotelAvailableRoomTypes(APIView):
 
 
 class CreateReservationView(APIView):
-    permission_classes = [IsGuest]
+    permission_classes = [IsGuestOrAdmin]
 
     @extend_schema(
         tags=['Hotels'],
@@ -306,19 +306,20 @@ class ListCreateOwnerReservationView(APIView):
         parameters=[serializers.FilterReservationsParamsSerializer],
         tags=['Owner Dashboard'],
         responses={
-            200: OpenApiResponse(response=serializers.ReservationItemSerializer)
+            200: OpenApiResponse(response=serializers.ReservationItemSerializer),
+            403: OpenApiResponse(description="When the owner wants to access other's hotels")
         }
     )
     def get(self, _request, *args, **kwargs):
         request = serializers.FilterReservationsParamsSerializer(data=self.request.query_params)
         if not request.is_valid():
             raise ValidationError(request.errors)
-        hotel_id = kwargs.pop('hotel_id', None)
-        if hotel_id is None:
-            raise ValidationError({'detail': 'Provide the hotel id'})
-        hotel = services.find_hotel_by_id(hotel_id)
-        self.check_object_permissions(_request, hotel)
-        reservations = services.find_reservations_by_hotel_id(hotel_id, request.validated_data)
+        hotel_id = request.validated_data.get('hotel_id', None)
+        if hotel_id is not None:
+            hotel = services.find_hotel_by_id(hotel_id)
+            self.check_object_permissions(_request, hotel)
+        reservations = services.find_reservations_by_filters(self.request.user.owner.id,
+                                                             request.validated_data)
         response = serializers.ReservationItemSerializer(reservations, many=True)
         return Response(response.data)
 
@@ -481,7 +482,7 @@ class GetStripPublicKey(APIView):
 
 
 class CreatePaymentIntentView(APIView):
-    permission_classes = [IsGuest]
+    permission_classes = [IsGuestOrAdmin]
 
     def post(self, request, *args, **kwargs):
         payment_request = serializers.PaymentRequestSerializer(data=self.request.data)
@@ -494,7 +495,7 @@ class CreatePaymentIntentView(APIView):
 
 
 class VerifyPaymentView(APIView):
-    permission_classes = [IsGuest]
+    permission_classes = [IsGuestOrAdmin]
 
     def post(self, _request, *args, **kwargs):
         request = serializers.VerifyPaymentRequestSerializer(data=self.request.data)

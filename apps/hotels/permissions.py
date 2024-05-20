@@ -14,11 +14,13 @@ class IsOwner(permissions.BasePermission):
         return request.user == hotel.owner.user
 
 
-class IsGuest(permissions.BasePermission):
+class IsGuestOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.user.is_authenticated:
-            return request.user.has_guest_account()
+            return request.user.has_guest_account() or request.user.is_superuser
         return False
 
     def has_object_permission(self, request, view, guest):
+        if request.user.is_superuser:
+            return True
         return request.user.guest == guest

@@ -502,12 +502,15 @@ class ReservationManager(models.Manager):
             hotel__owner_id=owner_id
         ).order_by('-created_at')
 
-    def find_reservations_by_hotel_id(self, hotel, filters: dict):
+    def find_reservations_by_filters(self, owner_id: int, filters: dict):
         qs = self.filter(
-            hotel=hotel,
+            hotel__owner_id=owner_id,
             check_in__gte=filters['check_in'],
             check_out__lte=filters['check_out'],
         )
+        hotel_id = filters.pop('hotel_id', None)
+        if hotel_id is not None:
+            qs = qs.filter(hotel_id=hotel_id)
         room_type = filters.pop('room_type', None)
         if room_type is not None:
             qs = qs.filter(

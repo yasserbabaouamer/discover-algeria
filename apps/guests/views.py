@@ -1,4 +1,5 @@
 import stripe
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
@@ -12,7 +13,8 @@ from core.utils import CustomException
 from . import serializers
 from . import services
 from .dtos import GuestTokens
-from ..hotels.permissions import IsGuest
+from .models import Guest
+from ..hotels.permissions import IsGuestOrAdmin
 from ..users.permissions import IsAdmin
 
 
@@ -71,7 +73,7 @@ class SetupGuestProfileForExistingUser(APIView):
 
 
 class GetEssentialGuestInfo(APIView):
-    permission_classes = [IsGuest]
+    permission_classes = [IsGuestOrAdmin]
 
     @extend_schema(
         tags=['Guests'],
@@ -88,10 +90,10 @@ class GetEssentialGuestInfo(APIView):
 
 
 class ManageMyGuestProfile(APIView):
-    permission_classes = [IsGuest]
+    permission_classes = [IsGuestOrAdmin]
 
     @extend_schema(
-        tags=['Guests'],
+        tags=['Guests', 'Admin'],
         summary='Get Guest Profile Information',
         responses={
             200: OpenApiResponse(response=serializers.ProfileSerializer,
@@ -99,16 +101,33 @@ class ManageMyGuestProfile(APIView):
         }
     )
     def get(self, request, *args, **kwargs):
-        profile = services.find_guest_profile(request.user.guest.id)
+        guest_id = kwargs.pop('guest_id', None)
+        if guest_id is None:
+            raise ValidationError({'detail': 'Provide a guest_id'})
+        guest = get_object_or_404(Guest, id=guest_id)
+        self.check_object_permissions(request, guest)
+        profile = services.find_guest_profile(guest_id)
         response = serializers.ProfileSerializer(profile)
         return Response(response.data)
 
     @extend_schema(
         tags=['Guests'],
-        summary='Update Profile Information'
+        summary='Update Profile Information',
+        request=serializers.UpdateGuestRequestSerializer,
+        responses={
+            200: OpenApiResponse(description='The account has been updated successfully'),
+            400: OpenApiResponse(description='Invalid arguments')
+        }
     )
     def put(self, request, *args, **kwargs):
-        pass
+        guest_id = kwargs.pop('guest_id', None)
+        if guest_id is None:
+            raise ValidationError({'detail': 'Provide a guest_id'})
+        update_guest_request = serializers.UpdateGuestRequestSerializer(data=request.data)
+        if not update_guest_request.is_valid():
+            raise ValidationError(update_guest_request.errors)
+        services.update_guest(guest_id, update_guest_request.validated_data)
+        return Response({'detail': 'The account has been updated successfully'})
 
 
 class ListCreateGuests(APIView):
@@ -127,10 +146,17 @@ class ListCreateGuests(APIView):
     @extend_schema(
         tags=['Admin'],
         summary='Create new guest - not implemented yet',
-        responses=serializers.CreateGuestRequestSerializer
-    )
-    def post(self, request, *args, **kwargs):
-        pass
+        responses={
+            200: serializers.CreateGuestRequestSerializer,
+            400: OpenApiResponse(description='Invalid or missing information'),
+            409: OpenApiResponse(description='This email is already used by a guest account')
+        })
+    def post(self, _request, *args, **kwargs):
+        request = serializers.CreateGuestRequestSerializer(data=self.request.data)
+        if not request.is_valid():
+            raise ValidationError(request.errors)
+        services.create_guest(request.validated_data)
+        return Response({'detail': "Guest has been created successfully"}, status=status.HTTP_201_CREATED)
 
 
 class ManageGuestsView(APIView):

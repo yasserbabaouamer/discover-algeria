@@ -62,9 +62,10 @@ def find_owner_profile(owner_id):
 
 
 def find_all_owners():
-    return Owner.objects.all()
+    return Owner.objects.filter(status=AccountStatus.ACTIVE).all()
 
 
 def delete_owner(owner_id):
     owner = get_object_or_404(Owner, id=owner_id)
     owner.status = AccountStatus.DELETED_BY_ADMIN
+    owner.save()

@@ -18,6 +18,12 @@ class HotelImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'img']
 
 
+class BaseHotelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hotel
+        fields = ['id', 'name', 'cover_img']
+
+
 class HotelSerializer(serializers.ModelSerializer):
     reviews_count = serializers.IntegerField()
     rating_avg = serializers.FloatField()
@@ -27,7 +33,7 @@ class HotelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hotel
         fields = ['id', 'name', 'stars', 'average',
-                  'cover_img', 'starts_at', 'reviews_count', 'rating_avg', 'images']
+                  'cover_img', 'starts_at', 'reviews_count', 'rating_avg']
 
 
 class RoomTypeSerializer(serializers.ModelSerializer):
@@ -303,13 +309,15 @@ class CreateHotelFormSerializer(serializers.Serializer):
 class FilterReservationsParamsSerializer(serializers.Serializer):
     check_in = serializers.DateField()
     check_out = serializers.DateField()
-    room_type = serializers.ChoiceField(choices=RoomTypeEnum.choices, default=None)
-    status = serializers.ChoiceField(choices=ReservationStatus.choices, default=None)
+    hotel_id = serializers.IntegerField(required=False)
+    room_type = serializers.ChoiceField(choices=RoomTypeEnum.choices, required=False)
+    status = serializers.ChoiceField(choices=ReservationStatus.choices, required=False)
     sort = serializers.ChoiceField(choices=SortReservations.choices, default=SortReservations.CHECK_IN.value)
 
 
 class ReservationItemSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    hotel = BaseHotelSerializer()
 
     def get_full_name(self, reservation: Reservation):
         return f"{reservation.first_name} {reservation.last_name}"
@@ -317,7 +325,7 @@ class ReservationItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reservation
         fields = [
-            'full_name', 'check_in', 'check_out', 'total_price', 'commission', 'status'
+            'full_name', 'check_in', 'check_out', 'total_price', 'commission', 'status', 'hotel'
         ]
 
 

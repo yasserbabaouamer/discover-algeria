@@ -63,7 +63,7 @@ class SetupOwnerProfileView(APIView):
 
 
 class GetOwnerEssentials(APIView):
-    permission_classes = [IsOwner]
+    permission_classes = [IsOwnerOrAdmin]
 
     @extend_schema(
         summary='Get Owner essential information',
@@ -77,7 +77,7 @@ class GetOwnerEssentials(APIView):
 
 
 class ManageProfileView(APIView):
-    permission_classes = [IsOwner]
+    permission_classes = [IsOwnerOrAdmin]
 
     @extend_schema(
         summary='Get owner profile - Owner',

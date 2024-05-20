@@ -188,9 +188,8 @@ def delete_owner_hotel(hotel_id):
     hotel.save()
 
 
-def find_reservations_by_hotel_id(hotel_id: int, filters: dict):
-    hotel = get_object_or_404(Hotel, id=hotel_id)
-    return Reservation.objects.find_reservations_by_hotel_id(hotel, filters)
+def find_reservations_by_filters(owner_id, filters: dict):
+    return Reservation.objects.find_reservations_by_filters(owner_id, filters)
 
 
 def find_hotel_by_reservation_id(reservation_id):

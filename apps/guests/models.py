@@ -17,6 +17,9 @@ class GuestManager(models.Manager):
             overall_rating=Value(0)
         ).get(pk=guest_id)
 
+    def find_all_guests_for_admin(self):
+        return self.filter(~Q(status=AccountStatus.DELETED_BY_ADMIN)).all()
+
 
 class Guest(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='guest')
