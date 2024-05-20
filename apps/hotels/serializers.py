@@ -178,8 +178,6 @@ class FilterRequestSerializer(serializers.Serializer):
     amenity_fields.pop('amenities')  # Remove the amenities queryset
     locals().update(amenity_fields)
 
-    print(locals())
-
     def validate(self, data):
         # Check that start_date is before end_date.
         check_in = data.get('check_in')

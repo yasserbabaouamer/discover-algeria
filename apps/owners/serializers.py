@@ -42,7 +42,8 @@ class OwnerEssentialInfoSerializer(serializers.ModelSerializer):
         return {
             'id': profile.country_code.id if profile.country_code is not None else None,
             'number': profile.phone,
-            'code': profile.country_code.country_code if profile.country_code is not None else None
+            'code': profile.country_code.country_code if profile.country_code is not None else None,
+            'flag': profile.country_code.flag.url if profile.country_code is not None else None
         }
 
     def get_email(self, owner: Owner):

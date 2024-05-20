@@ -1,7 +1,7 @@
-from django.shortcuts import render
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import ListAPIView
 from . import serializers, services
+from ..reservations.tasks import update_reservations
 
 
 class GetRecentlyAddedBlogs(ListAPIView):
