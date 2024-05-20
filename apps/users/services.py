@@ -173,6 +173,7 @@ def login_admin(login_request: dict):
         if user.is_superuser:
             refresh_token = RefreshToken.for_user(user)
             return {
+                'email': user.email,
                 'access': str(refresh_token.access_token),
                 'refresh': str(refresh_token),
             }

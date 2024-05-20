@@ -93,6 +93,10 @@ class ManageMyGuestProfile(APIView):
     @extend_schema(
         tags=['Guests'],
         summary='Get Guest Profile Information',
+        responses={
+            200: OpenApiResponse(response=serializers.ProfileSerializer,
+                                 description='Send request to see the real response structure')
+        }
     )
     def get(self, request, *args, **kwargs):
         profile = services.find_guest_profile(request.user.guest.id)

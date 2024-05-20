@@ -98,6 +98,12 @@ class PeriodicTourManager(models.Manager):
                 Value(0))
         ).all())
 
+    def find_by_id(self, tour_id):
+        return self.annotate(
+            reviews_count=SubqueryCount('scheduled_tours__registrations__review'),
+            rating_avg=Coalesce(SubqueryAvg('scheduled_tours__registrations__review__rating'), Value(0))
+        ).select_related('touristic_agency').get(pk=tour_id)
+
 
 class PeriodicTour(models.Model):
     touristic_agency = models.ForeignKey(TouristicAgency, on_delete=models.SET_NULL, null=True, related_name='tours')

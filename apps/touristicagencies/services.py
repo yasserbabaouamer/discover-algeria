@@ -1,5 +1,7 @@
 from datetime import date
 
+from django.shortcuts import get_object_or_404
+
 from .models import PeriodicTour
 
 
@@ -17,3 +19,7 @@ def find_available_tours(city_id: int, filter_request: dict):
         days[weekday].append(current_day)
     print('Requested Days :', days)
     return PeriodicTour.objects.find_available_tours_by_city_id(city_id, days)
+
+
+def find_tour_by_id(tour_id):
+    return PeriodicTour.objects.find_by_id(tour_id)

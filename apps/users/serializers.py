@@ -50,5 +50,10 @@ class AdminProfileSerializer(rest_serializers.Serializer):
     access = rest_serializers.CharField(max_length=255)
     refresh = rest_serializers.CharField(max_length=255)
     email = rest_serializers.EmailField()
-    profile_pic = rest_serializers.ImageField(default='users/defaults/default_profile_pic.jpg')
+    profile_pic = rest_serializers.ImageField(default='media/users/defaults/default_profile_pic.png')
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if not representation.get('profile_pic'):
+            representation['profile_pic'] = '/media/users/defaults/default_profile_pic.png'
+        return representation

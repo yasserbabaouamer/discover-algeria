@@ -170,7 +170,8 @@ class LoginAdminView(APIView):
         summary='Login admin',
         request=serializers.LoginAdminRequestSerializer,
         responses={
-            200: 'access and refresh will be served',
+            200: OpenApiResponse(response=serializers.AdminProfileSerializer),
+            400: 'Internal server problem',
             404: 'When the information are invalid'
         }
     )
@@ -179,4 +180,7 @@ class LoginAdminView(APIView):
         if not login_request.is_valid():
             raise ValidationError(login_request.errors)
         tokens = services.login_admin(login_request.data)
-        return Response(data=tokens)
+        response = serializers.AdminProfileSerializer(data=tokens)
+        if not response.is_valid():
+            raise ValidationError(response.errors)
+        return Response(data=response.data)

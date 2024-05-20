@@ -36,6 +36,14 @@ class SetupOwnerProfileFormSerializer(serializers.Serializer):
 
 class OwnerEssentialInfoSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
+    phone = serializers.SerializerMethodField()
+
+    def get_phone(self, profile: Owner):
+        return {
+            'id': profile.country_code.id if profile.country_code is not None else None,
+            'number': profile.phone,
+            'code': profile.country_code.country_code if profile.country_code is not None else None
+        }
 
     def get_email(self, owner: Owner):
         return owner.user.email
@@ -53,7 +61,6 @@ class OwnerProfileForAnyoneSerializer(OwnerEssentialInfoSerializer):
         model = Owner
         fields = list(OwnerEssentialInfoSerializer.Meta.fields
                       + ['about', 'overall_rating', 'country'])
-        fields.remove('phone')
 
 
 class OwnerProfileSerializer(OwnerProfileForAnyoneSerializer):
@@ -64,7 +71,7 @@ class OwnerProfileSerializer(OwnerProfileForAnyoneSerializer):
 
     class Meta:
         model = Owner
-        fields = OwnerProfileForAnyoneSerializer.Meta.fields + ['role', 'birthday', 'phone', 'address']
+        fields = OwnerProfileForAnyoneSerializer.Meta.fields + ['role', 'birthday', 'address']
 
 
 class OwnerSerializer(serializers.ModelSerializer):
