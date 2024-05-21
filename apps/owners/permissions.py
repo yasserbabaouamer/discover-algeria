@@ -9,4 +9,6 @@ class IsOwnerOrAdmin(BasePermission):
         return request.user.has_owner_account() or request.user.is_superuser
 
     def has_object_permission(self, request, view, owner: Owner):
+        if request.user.is_superuser:
+            return True
         return request.user == owner.user

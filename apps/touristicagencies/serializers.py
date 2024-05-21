@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PeriodicTour, TouristicAgency
+from .models import PeriodicTour, TouristicAgency, TourImage
 from ..destinations.serializers import CitySerializer
 
 
@@ -23,12 +23,20 @@ class TourismAgencySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'cover_img']
 
 
+class PeriodicTourImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TourImage
+        fields = ['id', 'image']
+
+
 class TourDetailsSerializer(serializers.ModelSerializer):
     reviews_count = serializers.IntegerField()
     rating_avg = serializers.FloatField()
     city = CitySerializer()
     agency = TourismAgencySerializer(source='touristic_agency')
+    images = PeriodicTourImageSerializer()
 
     class Meta:
         model = PeriodicTour
-        fields = ['id', 'title', 'city', 'description', 'agency', 'price', 'reviews_count', 'rating_avg']
+        fields = ['id', 'title', 'city', 'description', 'agency', 'price', 'reviews_count',
+                  'rating_avg', 'cover_img', 'images']

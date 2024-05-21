@@ -1,6 +1,8 @@
+from django.core.validators import RegexValidator
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework_dataclasses.serializers import DataclassSerializer
 
 from apps.destinations.serializers import CountrySerializer
@@ -98,7 +100,7 @@ class BaseGuestInfoSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=255)
     birthday = serializers.DateField(required=False)
     country_code_id = serializers.IntegerField(required=False)
-    phone = serializers.IntegerField(required=False)
+    phone = serializers.IntegerField(required=False, validators=[RegexValidator(regex="^\d{7,15}$")])
     country_id = serializers.IntegerField(required=False)
 
 
@@ -107,5 +109,12 @@ class CreateGuestRequestSerializer(BaseGuestInfoSerializer):
     password = serializers.CharField(max_length=255)
 
 
-class UpdateGuestRequestSerializer(BaseGuestInfoSerializer):
-    pass
+class UpdateGuestFormSerializer(serializers.Serializer):
+    body = serializers.JSONField()
+    profile_pic = serializers.ImageField(required=False)
+
+    def validate(self, data):
+        serializer = BaseGuestInfoSerializer(data=data['body'])
+        if not serializer.is_valid():
+            raise ValidationError(serializer.errors)
+        return data

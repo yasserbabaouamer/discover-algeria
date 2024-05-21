@@ -28,7 +28,7 @@ class Guest(models.Model):
     birthday = models.DateField(null=True)
     address = models.CharField(max_length=255, null=True)
     country_code = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True)
-    phone = models.PositiveIntegerField(validators=[RegexValidator(regex="^\d{7,15}$")], null=True)
+    phone = models.BigIntegerField(validators=[RegexValidator(regex="^\d{7,15}$")], null=True)
     country = models.ForeignKey(Country, related_name='guests', on_delete=models.SET_NULL, null=True)
     profile_pic = models.ImageField(upload_to='guests/', null=True)
     about = models.TextField(null=True)

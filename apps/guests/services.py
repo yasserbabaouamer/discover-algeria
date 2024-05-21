@@ -98,11 +98,14 @@ def create_guest(data: dict):
             birthday=data.get('birthday', None),
             profile_pic='users/defaults/default_profile_pic.png'
         )
-        Guest.objects.create_guest()
 
 
-def update_guest(guest_id, data: dict):
+def update_guest(guest_id, form: dict):
+    data = form['body']
     guest = get_object_or_404(Guest, id=guest_id)
     with transaction.atomic():
-        for field, info in data:
+        for field, info in data.items():
             setattr(guest, field, info if info else None)
+        if form.get('profile_pic', None):
+            guest.profile_pic = form['profile_pic']
+        guest.save()

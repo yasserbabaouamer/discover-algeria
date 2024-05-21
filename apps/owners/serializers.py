@@ -2,6 +2,7 @@ import datetime
 
 from django.core.validators import RegexValidator
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework_dataclasses.serializers import DataclassSerializer
 
 from .dtos import *
@@ -81,3 +82,28 @@ class OwnerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Owner
         fields = ['id', 'first_name', 'last_name', 'profile_pic', 'status', 'created_at', 'country']
+
+
+class BaseOwnerSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=255)
+    last_name = serializers.CharField(max_length=255)
+    birthday = serializers.DateField(required=False)
+    country_code_id = serializers.IntegerField(required=False)
+    phone = serializers.IntegerField(required=False, validators=[RegexValidator(regex="^\d{7,15}$")])
+    country_id = serializers.IntegerField(required=False)
+
+
+class CreateOwnerRequestSerializer(BaseOwnerSerializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(max_length=255)
+
+
+class UpdateOwnerFormSerializer(serializers.Serializer):
+    body = serializers.JSONField()
+    profile_pic = serializers.ImageField(required=False)
+
+    def validate(self, data):
+        serializer = BaseOwnerSerializer(data=data['body'])
+        if not serializer.is_valid():
+            raise ValidationError(serializer.errors)
+        return data

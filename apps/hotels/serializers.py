@@ -325,7 +325,7 @@ class ReservationItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reservation
         fields = [
-            'full_name', 'check_in', 'check_out', 'total_price', 'commission', 'status', 'hotel'
+            'id', 'full_name', 'check_in', 'check_out', 'total_price', 'commission', 'status', 'hotel'
         ]
 
 

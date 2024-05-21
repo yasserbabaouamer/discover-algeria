@@ -81,20 +81,36 @@ class ManageProfileView(APIView):
 
     @extend_schema(
         summary='Get owner profile - Owner',
-        tags=['Owner'],
+        tags=['Owner', 'Admin'],
         responses=serializers.OwnerProfileSerializer
     )
     def get(self, request, *args, **kwargs):
-        profile = services.find_owner_profile(request.user.owner.id)
+        owner_id = kwargs.pop('owner_id', None)
+        if owner_id is None:
+            raise ValidationError({'detail': 'Provide an owner_id'})
+        profile = services.find_owner_profile(owner_id)
         response = serializers.OwnerProfileSerializer(profile)
         return Response(response.data)
 
     @extend_schema(
-        summary='Update profile - Owner',
-        tags=['Owner']
+        summary='Update owner profile',
+        tags=['Owner', 'Admin'],
+        request=serializers.UpdateOwnerFormSerializer,
+        responses={
+            100: OpenApiResponse(description="This is what to send in the form body attr",
+                                 response=serializers.BaseOwnerSerializer),
+            200: OpenApiResponse(description="Successful update")
+        }
     )
     def put(self, request, *args, **kwargs):
-        pass
+        owner_id = kwargs.pop('owner_id', None)
+        if owner_id is None:
+            raise ValidationError({'detail': 'Provide an owner_id'})
+        update_form = serializers.UpdateOwnerFormSerializer(data=request.data)
+        if not update_form.is_valid():
+            raise ValidationError(update_form.errors)
+        services.update_owner(owner_id, update_form.validated_data)
+        return Response({'detail': 'The account has been updated successfully'})
 
 
 class GetOwnerProfileForAnyone(APIView):
@@ -111,7 +127,7 @@ class GetOwnerProfileForAnyone(APIView):
         }
     )
     def get(self, request, *args, **kwargs):
-        owner_id = kwargs.pop('id', None)
+        owner_id = kwargs.pop('owner_id', None)
         if owner_id is None:
             raise ValidationError({'detail': 'Provide an owner id'})
         profile = services.find_owner_profile(owner_id)
@@ -134,10 +150,20 @@ class ListCreateOwners(APIView):
 
     @extend_schema(
         tags=['Admin'],
-        summary='Create new owner - not implemented',
+        summary='Create new owner',
+        request=serializers.CreateOwnerRequestSerializer,
+        responses={
+            201: OpenApiResponse(description="Account created successfully"),
+            400: OpenApiResponse(description="Invalid arguments")
+        }
     )
     def post(self, request, *args, **kwargs):
-        pass
+        create_request = serializers.CreateOwnerRequestSerializer(data=request.data)
+        if not create_request.is_valid():
+            raise ValidationError(create_request.errors)
+        services.create_owner(create_request.validated_data)
+        return Response({'detail': 'The account has been created successfully'},
+                        status=status.HTTP_201_CREATED)
 
 
 class ManageOwnersView(APIView):
