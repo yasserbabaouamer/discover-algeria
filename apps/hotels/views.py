@@ -335,7 +335,7 @@ class ManageOwnerReservationView(APIView):
         }
     )
     def put(self, request, *args, **kwargs):
-        reservation_id = kwargs.pop('r_id', None)
+        reservation_id = kwargs.pop('reservation_id', None)
         if reservation_id is None:
             raise ValidationError({'detail': "You have to provide a reservation_id"})
         hotel = services.find_hotel_by_reservation_id(reservation_id)

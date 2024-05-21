@@ -81,10 +81,13 @@ def create_owner(data: dict):
                 raise CustomException({'detail': 'Make sure that ur password contains 8 characters and numbers'},
                                       status=status.HTTP_400_BAD_REQUEST)
             user.set_password(data['password'])
+            user.is_active = True
             user.save()
         if user.has_owner_account():
             raise CustomException({'detail': 'This user has already an owner account'},
                                   status=status.HTTP_409_CONFLICT)
+        user.is_active = True
+        user.save()
         Owner.objects.create(
             user=user,
             first_name=data['first_name'],

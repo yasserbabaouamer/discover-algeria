@@ -99,6 +99,7 @@ class BaseGuestInfoSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=255)
     last_name = serializers.CharField(max_length=255)
     birthday = serializers.DateField(required=False)
+    about = serializers.CharField(max_length=255, required=False)
     country_code_id = serializers.IntegerField(required=False)
     phone = serializers.IntegerField(required=False, validators=[RegexValidator(regex="^\d{7,15}$")])
     country_id = serializers.IntegerField(required=False)
