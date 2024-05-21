@@ -88,6 +88,7 @@ class BaseOwnerSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=255)
     last_name = serializers.CharField(max_length=255)
     about = serializers.CharField(max_length=255, required=False)
+    address = serializers.CharField(max_length=255, required=False)
     birthday = serializers.DateField(required=False)
     country_code_id = serializers.IntegerField(required=False)
     phone = serializers.IntegerField(required=False, validators=[RegexValidator(regex="^\d{7,15}$")])
