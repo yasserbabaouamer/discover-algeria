@@ -205,33 +205,36 @@ class HotelManager(models.Manager):
         ).aggregate(income=Count('reservations__total_price'))
 
     def find_hotel_details_for_dashboard(self, hotel_id: int):
-        return self.annotate(
-            revenue=SubquerySum('reservations__total_price',
-                                filter=Q(status=ReservationStatus.COMPLETED)),
-            reservations_count=SubqueryCount('reservations'),
-            cancellations_count=SubqueryCount('reservations',
-                                              filter=Q(status__in=[ReservationStatus.CANCELLED_BY_GUEST,
-                                                                   ReservationStatus.CANCELLED_BY_OWNER])),
+        try:
+            return self.annotate(
+                revenue=SubquerySum('reservations__total_price',
+                                    filter=Q(status=ReservationStatus.COMPLETED)),
+                reservations_count=SubqueryCount('reservations'),
+                cancellations_count=SubqueryCount('reservations',
+                                                  filter=Q(status__in=[ReservationStatus.CANCELLED_BY_GUEST,
+                                                                       ReservationStatus.CANCELLED_BY_OWNER])),
 
-            completed_count=SubqueryCount('reservations', filter=Q(status=ReservationStatus.COMPLETED)),
-            rating_avg=SubqueryAvg('reservations__review__rating'),
-            reviews_count=SubqueryCount('reservations__review'),
-        ).prefetch_related(
-            Prefetch('room_types',
-                     queryset=RoomType.objects.filter(hotel_id=hotel_id, status=RoomTypeStatus.VISIBLE)
-                     .annotate(
-                         rooms_count=SubqueryCount('rooms', filter=Q(status=RoomStatus.VISIBLE)),
-                         occupied_rooms_count=SubqueryCount(
-                             'reserved_room_types__assigned_rooms__room_id',
-                             filter=Q(reserved_room_type__reservation__status=ReservationStatus.ACTIVE)
-                         ),
-                         monthly_revenue=
-                         SubqueryCount('reserved_room_types',
-                                       filter=Q(reservation__status=ReservationStatus.COMPLETED) &
-                                              Q(reservation__check_out__month=datetime.today().month - 1)
-                                       )
-                     ))
-        ).get(pk=hotel_id, status=HotelStatus.VISIBLE)
+                completed_count=SubqueryCount('reservations', filter=Q(status=ReservationStatus.COMPLETED)),
+                rating_avg=SubqueryAvg('reservations__review__rating'),
+                reviews_count=SubqueryCount('reservations__review'),
+            ).prefetch_related(
+                Prefetch('room_types',
+                         queryset=RoomType.objects.filter(hotel_id=hotel_id, status=RoomTypeStatus.VISIBLE)
+                         .annotate(
+                             rooms_count=SubqueryCount('rooms', filter=Q(status=RoomStatus.VISIBLE)),
+                             occupied_rooms_count=SubqueryCount(
+                                 'reserved_room_types__assigned_rooms__room_id',
+                                 filter=Q(reserved_room_type__reservation__status=ReservationStatus.ACTIVE)
+                             ),
+                             monthly_revenue=
+                             SubqueryCount('reserved_room_types',
+                                           filter=Q(reservation__status=ReservationStatus.COMPLETED) &
+                                                  Q(reservation__check_out__month=datetime.today().month - 1)
+                                           )
+                         ))
+            ).get(pk=hotel_id, status=HotelStatus.VISIBLE)
+        except ObjectDoesNotExist as e:
+            raise NotFound({'detail': 'No such hotel with this id'})
 
     def find_with_rules_and_parking_and_images(self, hotel_id):
         try:

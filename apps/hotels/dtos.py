@@ -104,6 +104,7 @@ class AmenityCategoryDto:
 
 @dataclass
 class HotelDashboardReservationDto:
+    total: int
     completed: int
     cancelled: int
     income: int

@@ -6,9 +6,10 @@ from django.utils import timezone
 
 from apps.hotels.enums import ReservationStatus
 from apps.hotels.models import Reservation
+from core.celery import app
 
 
-@shared_task
+@app.task
 def update_reservations():
     print("update reservations is running ...")
     now = timezone.now()
@@ -20,3 +21,4 @@ def update_reservations():
         elif reservation.status == ReservationStatus.ACTIVE and reservation.check_out <= now:
             reservation.status = ReservationStatus.COMPLETED
             reservation.save()
+    return "Done"

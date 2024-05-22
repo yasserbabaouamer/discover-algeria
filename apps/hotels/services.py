@@ -440,7 +440,7 @@ def get_hotel_info_for_edit(request, hotel_id) -> HotelEditInfoDTO:
          for language in Language.objects.find_languages_by_hotel_id(hotel_id)],
         hotel.rules.check_in_from, hotel.rules.check_in_until,
         hotel.rules.check_out_from, hotel.rules.check_out_until,
-        [get_cancellation_policy_dto(policy, selected_cancellation_policy) for policy in
+        [HotelCancellationPolicyDTO(policy, policy == selected_cancellation_policy) for policy in
          HotelCancellationPolicy], hotel.rules.days_before_cancellation,
         [HotelPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
          for policy in HotelPrepaymentPolicy],

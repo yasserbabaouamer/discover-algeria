@@ -104,29 +104,20 @@ class HotelDashboardInfoDtoConverter:
 
     def to_dto(self, hotel: Hotel) -> HotelDashboardInfoDto:
         return HotelDashboardInfoDto(
-            hotel.id, hotel.name, hotel.stars,
+            hotel.id,
+            hotel.name,
+            hotel.stars,
             f"{hotel.address}, {hotel.city.name}, {hotel.city.country.name}",
-            hotel.longitude, hotel.latitude, hotel.rating_avg, HotelDashboardReservationDto(
-                hotel.completed_count, hotel.cancellations_count, hotel.revenue
+            hotel.longitude,
+            hotel.latitude,
+            hotel.rating_avg,
+            HotelDashboardReservationDto(
+                hotel.reservations_count, hotel.completed_count,
+                hotel.cancellations_count, hotel.revenue
             ), self.room_type_converter.to_dtos_list(hotel.room_types.all()),
             [r.review for r in hotel.reservations.all() if hasattr(r, 'review')]
         )
 
-
-def get_cancellation_policy_dto(policy: str,
-                                selected_policy: str) -> HotelCancellationPolicyDTO:
-    return HotelCancellationPolicyDTO(
-        policy=policy,
-        checked=(policy == selected_policy)
-    )
-
-
-def get_room_cancellation_policy_dto(policy: str,
-                                     selected_policy: str) -> RoomCancellationPolicyDTO:
-    return RoomCancellationPolicyDTO(
-        policy=policy,
-        checked=(policy == selected_policy)
-    )
 
 
 class HotelEditInfoDtoConverter:

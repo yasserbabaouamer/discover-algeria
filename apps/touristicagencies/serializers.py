@@ -34,7 +34,7 @@ class TourDetailsSerializer(serializers.ModelSerializer):
     rating_avg = serializers.FloatField()
     city = CitySerializer()
     agency = TourismAgencySerializer(source='touristic_agency')
-    images = PeriodicTourImageSerializer()
+    images = PeriodicTourImageSerializer(many=True)
 
     class Meta:
         model = PeriodicTour
