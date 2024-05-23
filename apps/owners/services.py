@@ -41,6 +41,8 @@ def setup_owner_profile(user: User, data: dict):
         raise CustomException(
             {'detail': 'You have already set your owner account, go to your profile settings and edit'},
             status.HTTP_409_CONFLICT)
+    print('country_code_id :', data.get('country_code_id', None))
+    print('country_id :', data.get('country_id', None))
     owner = Owner.objects.create(
         user=user,
         first_name=data['first_name'],

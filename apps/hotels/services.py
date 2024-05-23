@@ -130,14 +130,24 @@ def filter_city_hotels(city_id, search_req: dict):
     search_req.pop('number_of_adults')
     search_req.pop('number_of_children')
     # Iterate over amenities
+    filtered_hotels = []
     for hotel in hotels:
+        keep_hotel = True
         for key, value in search_req.items():
             if value:
-                if not Hotel.objects.has_amenity(hotel.id, FilterRequestSerializer.amenity_map[key]):
-                    hotels.remove(hotel)
+                print(f"name: {key} id:{FilterRequestSerializer.amenity_map[key]}")
+                has_amenity = Hotel.objects.has_amenity(hotel.id, price_starts_at, price_ends_at,
+                                                        FilterRequestSerializer.amenity_map[key])
+                print(f"{hotel.name} has {key} ?: {has_amenity}")
+                if not has_amenity:
+                    keep_hotel = False
                     break
+        if keep_hotel:
+            filtered_hotels.append(hotel)
+
+    # Update the hotels list with the filtered list
     converter = HotelDetailsDtoConverter()
-    return converter.to_dtos_list(hotels)
+    return converter.to_dtos_list(filtered_hotels)
 
 
 def find_hotel_amenities():

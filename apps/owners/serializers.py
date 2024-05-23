@@ -91,7 +91,7 @@ class BaseOwnerSerializer(serializers.Serializer):
     address = serializers.CharField(max_length=255, required=False)
     birthday = serializers.DateField(required=False)
     country_code_id = serializers.IntegerField(required=False)
-    phone = serializers.IntegerField(required=False, validators=[RegexValidator(regex="^\d{7,15}$")])
+    phone = serializers.IntegerField(required=False, allow_null=True, validators=[RegexValidator(regex="^\d{7,15}$")])
     country_id = serializers.IntegerField(required=False)
 
 

@@ -160,11 +160,18 @@ class HotelManager(models.Manager):
                 break
         return available_hotels
 
-    def has_amenity(self, hotel_id, amenity: str) -> bool:
-        return self.filter(
-            Q(id=hotel_id) &
-            Q(room_types__amenities__name=amenity) | Q(amenities__name=amenity)
+    def has_amenity(self, hotel_id, price_min: int, price_max: int, amenity_id: int) -> bool:
+        hotel_amenity_exists = self.filter(
+            id=hotel_id,
+            amenities__id=amenity_id
         ).exists()
+        room_type_amenity_exists = self.filter(
+            id=hotel_id,
+            room_types__price_per_night__gte=price_min,
+            room_types__price_per_night__lte=price_max,
+            room_types__amenities__id=amenity_id
+        ).exists()
+        return hotel_amenity_exists or room_type_amenity_exists
 
     def find_top_hotels_by_city_id(self, city_id: int):
         return (self.annotate(

@@ -177,7 +177,7 @@ class FilterRequestSerializer(serializers.Serializer):
     for amenity in amenities:
         field_name = amenity.name.lower().replace(' ', '_')
         locals()[field_name] = serializers.BooleanField(required=False, default=False)
-        amenity_map[field_name] = amenity.name
+        amenity_map[field_name] = amenity.id
 
     # Add dynamically created fields to the serializers class
     amenity_fields = locals().copy()
