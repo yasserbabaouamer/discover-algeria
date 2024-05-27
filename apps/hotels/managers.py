@@ -27,7 +27,7 @@ class RoomManager(models.Manager):
             )
         ).all()
         reserved_rooms_ids = reserved_rooms.values_list('id', flat=True)
-        available_rooms = self.filter(room_type_id=room_type_id).exclude(id__in=reserved_rooms_ids).all()
+        available_rooms = self.filter(room_type_id=room_type_id,status=RoomStatus.VISIBLE).exclude(id__in=reserved_rooms_ids).all()
         return available_rooms
 
     def get_room_type_rooms_subquery(self):

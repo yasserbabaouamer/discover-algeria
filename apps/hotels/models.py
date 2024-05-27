@@ -411,8 +411,6 @@ class RoomTypeManager(models.Manager):
         for room_type in room_types:
             room_type.available_rooms_count = len(
                 Room.objects.find_available_rooms_by_room_type(room_type.id, check_in, check_out))
-            print(
-                f"{room_type.name} : {room_type.available_rooms_count}")
             if room_type.available_rooms_count > 0:
                 available_room_types.append(room_type)
         return available_room_types
