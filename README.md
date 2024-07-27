@@ -8,12 +8,13 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
 
 ## 3. Table of contents
 
-- [Features](https://www.notion.so/READMe-d7b76d0595cd4862b34875959636ce2b?pvs=21)
-- [Installation](https://www.notion.so/READMe-d7b76d0595cd4862b34875959636ce2b?pvs=21)
-- [Usage](https://www.notion.so/READMe-d7b76d0595cd4862b34875959636ce2b?pvs=21)
-- [Technologies](https://www.notion.so/READMe-d7b76d0595cd4862b34875959636ce2b?pvs=21)
-- Usage
-- Contacts
+- [Features](#4-features)
+- [Installation](#5-basic-installation-guide)
+- [Technologies used](#6-technologies-used)
+- [Screenshots](#7-screenshots)
+- [Project Status](#8-project-status)
+- [Acknowledgements](#9-acknowledgements)
+- [Contact](#10-contact-information)
 
 ## 4. Features
 
@@ -98,28 +99,37 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
 
 ## 7. Screenshots
 
-![home-screen](https://drive.usercontent.google.com/download?id=1pbSkZ1Ms89cfS_MzpYRu8n-O6oXwtDxQ)
+![home-screen](https://github.com/user-attachments/assets/4d3ee308-beb6-43bf-ac93-f2418f7c61a9)
  :--:
  figure 1: home screen
 
-![login-screen](https://drive.usercontent.google.com/download?id=1CeiEWWYeouN9UQ7PhcVnxU7Xu3Pqt-EC)
+![login-screen](https://github.com/user-attachments/assets/9932fcb4-6736-42b0-888b-75d2ebefd9f7)
 :--:
- figure 2: login a guest
+ figure 2: login screen
  
 ![checkout](https://drive.usercontent.google.com/download?id=1zKu07q7vMbcMh1woOAfJddRr9RfRmGVg)
 :--:
  figure 3: checkout page
 
- for more screenshots, click here
+ more screenshots
+ <br><br>
+<img alt="admin_guests" src="https://github.com/user-attachments/assets/b4ee2814-97e7-4cfa-81da-9e252d9e3496" width="33%" style="height: 200px; object-fit: cover;"></img>
+<img alt="owner_hotels" src="https://github.com/user-attachments/assets/f0fe2bd6-e1cf-4910-a647-b4b456d3a46f" width="33%" style="height: 200px; object-fit: cover;"></img>
+<img alt="hotel details" src="https://github.com/user-attachments/assets/32556b3c-2dd6-4095-a926-b1262109806b" width="33%" style="height: 200px; object-fit: cover;"></img>
+<img alt="guest profile" src="https://github.com/user-attachments/assets/9cf911d6-8316-40b9-8da4-26faf785ebe1" width="33%" style="height: 200px; object-fit: cover;"></img>
+<img alt="admin_owners" src="https://github.com/user-attachments/assets/d6d02cb0-1727-4703-a9ef-9d31c267475d" width="33%" style="height: 200px; object-fit: cover;"></img>
 
- ## Project Status
+
+
+
+ ## 8. Project Status
  **Alpha Version**: This project is currently in the alpha version. We are actively working on it and plan to add new features in the future.
 
 
- ## Acknowledgements
+ ## 9. Acknowledgements
 - Thanks to all the open-source libraries used in this project.
 - Special thanks to [brahim bafouloulou](https://github.com/brahimbafou) for collaboration.
 
-## Contact Information
+## 10. Contact Information
 
-For any inquiries, please contact [yasser babaouamer] at [yacerbaba10@gmail.com].
+For any inquiries, please contact me at [yacerbaba10@gmail.com].
