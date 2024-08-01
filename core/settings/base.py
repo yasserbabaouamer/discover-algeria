@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.owners',
     'apps.restaurants',
-    'apps.reservations',
+    # 'apps.reservations',
     'apps.touristicagencies',
     'apps.vacationrentals',
     'apps.destinations',

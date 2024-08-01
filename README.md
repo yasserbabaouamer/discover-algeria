@@ -151,7 +151,7 @@ I needed a fast and efficient search algorithm with recommendation features. Sta
 
 ### Designing an innovative authentication flow
 
-I developed a comprehensive authentication flow that seamlessly integrates the signup, login, account confirmation, and password reset processes. The diagram illustrates this flow in detail.[link](https://drive.google.com/file/d/1y58gcR33Mlc4A6VeoGFvjwr6mwDlYE_3/view?usp=sharing)
+I developed a comprehensive authentication flow that seamlessly integrates the signup, login, account confirmation, and password reset processes. The diagram illustrates this flow in detail. [link](https://drive.google.com/file/d/1y58gcR33Mlc4A6VeoGFvjwr6mwDlYE_3/view?usp=sharing)
 
 **Why I chose this approach:**
 
