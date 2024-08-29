@@ -8,10 +8,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -27,6 +23,8 @@ INSTALLED_APPS = [
     'decouple',
     'corsheaders',
     'django_celery_beat',
+    'storages',
+    'channels',
     # INTERNAL_PACKAGES
     'apps.cars',
     'apps.guests',
@@ -112,9 +110,28 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-MEDIA_ROOT = os.path.join(BASE_DIR.parent, 'media')
-MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR.parent, 'media')
+# MEDIA_URL = config('MEDIA_URL')
 
+# S3 configurations
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME')
+
+# Static and Media backends
+STORAGES = {
+    # media storage backend
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+    },
+    # static storage backend
+    "staticfiles": {
+        "BACKEND": "storages.backends.s3.S3Storage"
+    }
+}
+
+# Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -124,17 +141,13 @@ EMAIL_HOST_USER = config('EMAIL_ADDRESS')  # Your email address
 EMAIL_HOST_PASSWORD = config('EMAIL_PASSWORD')  # Your email password
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
 STATIC_URL = 'static/'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Celery configuration
 CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
 CELERY_ACCEPT_CONTENT = ['json']

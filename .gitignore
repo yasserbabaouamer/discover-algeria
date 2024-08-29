@@ -1,3 +1,4 @@
 .env
 core/settings/local.py
+core/settings/prod.py
 media

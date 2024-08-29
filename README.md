@@ -1,23 +1,23 @@
-## 1. DiscoverAlgeria
+## DiscoverAlgeria
 
 DiscoverAlgeria: Your Gateway to the Wonders of Algeria
 
-## 2. Project description:
+## Project description:
 
 DiscoverAlgeria is a comprehensive tourism platform designed to showcase the beauty and attractions of Algeria. It aims to provide travelers with detailed information about various tourist destinations, cultural experiences, accommodation options, guided tours, and helpful tips to enrich their exploration of Algeria.
 
-## 3. Table of contents
+## Table of contents
 
-- [Features](#4-features)
-- [Installation](#5-basic-installation-guide)
-- [Technologies used](#6-technologies-used)
-- [Screenshots](#7-screenshots)
-- [Reflection](#8-reflection)
-- [Project Status](#8-project-status)
-- [Acknowledgements](#9-acknowledgements)
-- [Contact](#10-contact-information)
+- [Features](#1-features)
+- [Installation](#2-basic-installation-guide)
+- [Technologies used](#3-technologies-used)
+- [Screenshots](#4-screenshots)
+- [Reflection](#5-reflection)
+- [Project Status](#6-project-status)
+- [Acknowledgements](#7-acknowledgements)
+- [Contact](#8-contact-information)
 
-## 4. Features
+## 1. Features
 
 - **Register a new account**
 - **Search for destinations, hotels, tours, or touristic agencies**
@@ -44,7 +44,7 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
 - **Automatically Update Reservation Status Periodically**
 - **Ensure secure and efficient payment processing for reservations (via Stripe)**
 
-## 5. Basic Installation Guide
+## 2. Basic Installation Guide
 
 ### Prerequisites:
 
@@ -59,7 +59,7 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
     git clone https://github.com/yasserbabaouamer/discover-algeria.git
     ```
 
-1. Navigate the project directory, and create a virtual environement
+1. Navigate the project directory, and create a virtual environment
     
     ```bash
     virtualenv -p python3 venv
@@ -88,17 +88,23 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
     
 
 1. Open the project in your preferred IDE and configure it to use the interpreter from the virtual environment.
-
-## 6. Technologies used:
+1. Run the project using Gunicorn
+     ```bash
+    gunicorn --workers {X} --access-logfile - --bind 0.0.0.0:8000 core.wsgi:application
+    ```
+   Change {X} with the number of worker processes you want to handle the requests, it's recommended to have (2 x $num_cores) + 1 workers.
+## 3. Technologies used:
 
 - Frontend: React, HTML, CSS, JavaScript
 - Backend: Django, DRF
 - Databases: MariaDB
-- Task sheduling: celery, celery-beats, redis
+- Cloud: AWS (EC2 for hosting, S3 for storage)
+- Web server: Gunicorn, (Nginx to be added soon)
+- Task scheduling: celery, celery-beats, redis
 - Authentication: JWT
 - API documentation: OpenAPI (drf-spectacular)
 
-## 7. Screenshots
+## 4. Screenshots
 
 ![home-screen](https://github.com/user-attachments/assets/4d3ee308-beb6-43bf-ac93-f2418f7c61a9)
  :--:
@@ -122,7 +128,7 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
 <img alt="city_hotels" src="https://drive.usercontent.google.com/download?id=1bP7kwflG_B5NQL1Z_6qGq33l1kW54iFL" width="30%" style="height: 200px; object-fit: cover;"></img>
 
 
-## 8. Reflection
+## 5. Reflection
 
 This project was built to obtain a bachelor's degree in software engineering, Project goals was:
 
@@ -173,14 +179,14 @@ I tackled the challenge of allowing users to manage multiple profiles (guest, ho
 
 The system required numerous complex queries and filters to deliver detailed statistics and results. Initially, I struggled with writing multiple subqueries in Django, as they were hard to manage. That's when I discovered the [django-sql-utils](https://github.com/martsberger/django-sql-utils) package. This package greatly simplified the process, making it easier to write subqueries and handle conditions within them, streamlining the development of complex queries.
 
- ## 8. Project Status
+ ## 6. Project Status
  **Alpha Version**: This project is currently in the alpha version. We are actively working on it and plan to add new features in the future.
 
 
- ## 9. Acknowledgements
+ ## 7. Acknowledgements
 - Thanks to all the open-source libraries used in this project.
 - Special thanks to [brahim bafouloulou](https://github.com/brahimbafou) for collaboration.
 
-## 10. Contact Information
+## 8. Contact Information
 
 For any inquiries, please contact me at [yacerbaba10@gmail.com].
