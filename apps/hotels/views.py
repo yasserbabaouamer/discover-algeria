@@ -219,7 +219,8 @@ class GetHotelEditInformation(APIView):
         if hotel_id is None:
             raise ValidationError({'detail': 'Provide a hotel id'})
         self.check_object_permissions(request, services.find_hotel_by_id(hotel_id))
-        hotel_edit_info = services.get_hotel_info_for_edit(request, hotel_id)
+        hotel_edit_info = services.get_hotel_info_for_edit(hotel_id)
+        print(hotel_edit_info)
         response = serializers.HotelEditInfoDtoSerializer(hotel_edit_info)
         return Response(data=response.data, status=status.HTTP_200_OK)
 

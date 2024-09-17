@@ -1,4 +1,7 @@
 .env
+.docker.local.env
 core/settings/local.py
 core/settings/prod.py
 media
+docker-compose.dev.yml
+docker-compose.prod.yml

@@ -1,6 +1,6 @@
 import typing
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import datetime, date, time
 from typing import List
 
 from apps.hotels.models import GuestReview, RoomTypeBed, RoomTypePolicies, HotelRules
@@ -215,10 +215,10 @@ class HotelEditInfoDTO(BaseHotelDTO):
     cities: List[BaseCityDTO]
     facilities: List[AmenityDTO]
     staff_languages: List[StaffLanguageDTO]
-    check_in_from: datetime
-    check_in_until: datetime
-    check_out_from: datetime
-    check_out_until: datetime
+    check_in_from: time
+    check_in_until: time
+    check_out_from: time
+    check_out_until: time
     cancellation_policies: List[HotelCancellationPolicyDTO]
     days_before_cancellation: int
     prepayment_policies: List[HotelPrepaymentPolicyDTO]

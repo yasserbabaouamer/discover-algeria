@@ -1,0 +1,13 @@
+#version: "3.8"
+services:
+  backend:
+    image: app:discoveralgeria
+    container_name: discoveralgeria_container
+    command: python manage.py runserver 0.0.0.0:8000
+    build: .
+    volumes:
+      - .:/discoveralgeria
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env

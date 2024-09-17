@@ -9,126 +9,120 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
 ## Table of contents
 
 - [Features](#1-features)
-- [Installation](#2-basic-installation-guide)
-- [Technologies used](#3-technologies-used)
-- [Screenshots](#4-screenshots)
-- [Reflection](#5-reflection)
-- [Project Status](#6-project-status)
-- [Acknowledgements](#7-acknowledgements)
-- [Contact](#8-contact-information)
+- [Technologies used](#2-technologies-used)
+- [Screenshots](#3-screenshots)
+- [Reflection](#4-reflection)
+- [Project Status](#5-project-status)
+- [Acknowledgements](#6-acknowledgements)
+- [Contact](#7-contact-information)
 
 ## 1. Features
 
-- **Register a new account**
+**The visitor can:**
+
 - **Search for destinations, hotels, tours, or touristic agencies**
+- **Filter search results based on various criteria (e.g., amenities, price range)**
 - **View details of destinations, hotels, and tours**
 - **Browse hotels and activities available in a city**
-- **Check room availability within a specified date range at a specific hotel**
-- **Filter search results based on various criteria (e.g., amenities, price range)**
+- **View hotel or agency owner information**
+- **Check room availability for a specific date range at a hotel**
 - **View available room types in a hotel**
+- **Register a new account**
+
+**The platform user can:**
+
 - **Log in and log out of their account**
-- **View and manage profile information (statistics, update profile, delete account)**
-- **Reset password**
-- **Select and reserve rooms, and make payments for reservations**
-- **Add reviews for hotels post-reservation**
-- **View past reservations**
+- **Reset their password**
+- **View and manage profile information (e.g., view statistics, update profile, delete account)**
 - **Manage favorites and personal reviews**
-- **View monthly and yearly statistics**
+
+**The guest can:**
+
+- **Select and reserve rooms**
+- **Make payments for reservations**
+- **Leave reviews for hotels after reservations**
+- **View past reservations**
+
+**The hotel owner can:**
+
 - **View, add, update, and delete hotel information**
-- **Manage hotel and room cancellation policies, prepayment policies, and parking arrangements**
-- **Manage room reservations (view and cancel)**
-- **View room statistics**
+- **Manage hotel policies (e.g., cancellation, prepayment, parking)**
+- **View monthly and yearly statistics**
+- **Manage room reservations (e.g., view and cancel)**
 - **Add, update, and delete room types**
-- **View, update, and delete guest and owner accounts**
+- **View room statistics**
+
+**The tourism agency can:**
+
+- **Manage agency information**
+- **View, add, update, and delete tours (to be added soon)**
+
+**The admin can:**
+
+- **Manage guest and owner accounts**
+
+**The system will:**
+
 - **Automatically assign available rooms to confirmed reservations**
-- **Automatically Update Reservation Status Periodically**
+- **Automatically update reservation status periodically**
 - **Ensure secure and efficient payment processing for reservations (via Stripe)**
 
-## 2. Basic Installation Guide
-
-### Prerequisites:
-
-- Python v3.11
-- Node.js v16.20.2
-- npm 8.19.4
-- Git
-
-1. Clone the repository to your local machine:
-
-    ```bash
-    git clone https://github.com/yasserbabaouamer/discover-algeria.git
-    ```
-
-1. Navigate the project directory, and create a virtual environment
-    
-    ```bash
-    virtualenv -p python3 venv
-    ```
-    
-2. Activate the virtual environment
-    
-    On Linux
-    
-    ```bash
-    source venv/bin/activate
-    ```
-    
-    On windows
-    
-    ```bash
-    venv\Scripts\activate
-    ```
-    
-
-1. Install the project requirements
-    
-    ```bash
-    pip install -r requirements.txt
-    ```
-    
-
-1. Open the project in your preferred IDE and configure it to use the interpreter from the virtual environment.
-1. Run the project using Gunicorn
-     ```bash
-    gunicorn --workers {X} --access-logfile - --bind 0.0.0.0:8000 core.wsgi:application
-    ```
-   Change {X} with the number of worker processes you want to handle the requests, it's recommended to have (2 x $num_cores) + 1 workers.
-## 3. Technologies used:
+## 2. Technologies used
 
 - Frontend: React, HTML, CSS, JavaScript
-- Backend: Django, DRF
+- Backend: Python, C, Django, DRF
 - Databases: MariaDB
-- Cloud: AWS (EC2 for hosting, S3 for storage)
+- Cloud/Infrastructure: Docker, AWS (EC2 for hosting, S3 for storage)
 - Web server: Gunicorn, (Nginx to be added soon)
 - Task scheduling: celery, celery-beats, redis
 - Authentication: JWT
 - API documentation: OpenAPI (drf-spectacular)
 
-## 4. Screenshots
+## 3. Screenshots
 
-![home-screen](https://github.com/user-attachments/assets/4d3ee308-beb6-43bf-ac93-f2418f7c61a9)
+![home-page](https://drive.usercontent.google.com/download?id=1oWjMkzlHpfSyAJGV4mSxapvJ-ge0e-9e)
  :--:
- figure 1: home screen
+ figure 1: Home page
 
-![login-screen](https://github.com/user-attachments/assets/9932fcb4-6736-42b0-888b-75d2ebefd9f7)
+![hotel-details-page](https://drive.usercontent.google.com/download?id=1RERA8IrJvqllPbCheZjV7zM3CtntXvz0)
 :--:
- figure 2: login screen
+ figure 2: Hotel details page
  
-![checkout](https://drive.usercontent.google.com/download?id=1zKu07q7vMbcMh1woOAfJddRr9RfRmGVg)
+
+![city-details-page](https://drive.usercontent.google.com/download?id=1yOox2yZhP7sfXrkPn87D3ChxNeYfjx4M)
 :--:
- figure 3: checkout page
+ figure 3: City details page
 
- more screenshots
- <br><br>
-<img alt="admin_guests" src="https://github.com/user-attachments/assets/b4ee2814-97e7-4cfa-81da-9e252d9e3496" width="30%" style="height: 200px; object-fit: cover;"></img>
-<img alt="owner_hotels" src="https://github.com/user-attachments/assets/f0fe2bd6-e1cf-4910-a647-b4b456d3a46f" width="30%" style="height: 200px; object-fit: cover;"></img>
-<img alt="hotel details" src="https://github.com/user-attachments/assets/32556b3c-2dd6-4095-a926-b1262109806b" width="30%" style="height: 200px; object-fit: cover;"></img>
-<img alt="guest profile" src="https://github.com/user-attachments/assets/9cf911d6-8316-40b9-8da4-26faf785ebe1" width="30%" style="height: 200px; object-fit: cover;"></img>
-<img alt="admin_owners" src="https://github.com/user-attachments/assets/d6d02cb0-1727-4703-a9ef-9d31c267475d" width="30%" style="height: 200px; object-fit: cover;"></img>
-<img alt="city_hotels" src="https://drive.usercontent.google.com/download?id=1bP7kwflG_B5NQL1Z_6qGq33l1kW54iFL" width="30%" style="height: 200px; object-fit: cover;"></img>
+![city-details-page](https://drive.usercontent.google.com/download?id=1I92sk1hWjuQhkblKIGOm-jurNMku0B6i)
+:--:
+ figure 4: City hotels page
+
+![checkout-page](https://drive.usercontent.google.com/download?id=1I_q0hUGOTTyUOTVvBdUhtgdleJBSWsAR)
+:--:
+ figure 5: Checkout page
+
+![city-details-page](https://drive.usercontent.google.com/download?id=1szkuoiv6CrdXhvH0prOuDx6pX5g9wEe8)
+
+![city-details-page](https://drive.usercontent.google.com/download?id=17xfms4U9Okq6Ga-8z42TGyDHnL_G7zjf)
+
+![city-details-page](https://drive.usercontent.google.com/download?id=1Q_ceq5B5cb1IyOYr3f8WF-Hsdg9Bizt_)
+
+![city-details-page](https://drive.usercontent.google.com/download?id=1X1sTcLW5bqWA8FwgMeuD0j_QBmRvuwm3)
+
+![city-details-page](https://drive.usercontent.google.com/download?id=1Bgcfsyr5XieOxftuZCQQRxZvQHd_WHYD)
+:--:
+ figure 6: Edit Hotel information page
+
+![admin-guests](https://drive.usercontent.google.com/download?id=1HfbZ4nhkeP3spTVM23yfFJSmlxFk3gAX)
+:--:
+ figure 7: Edit Guests -Admin-
+
+![admin-hosts](https://drive.usercontent.google.com/download?id=1Og3eFTRFQQtpFnJsCzURcuzy07mnvZFL)
+:--:
+ figure 8: Edit Hosts -Admin-
 
 
-## 5. Reflection
+## 4. Reflection
 
 This project was built to obtain a bachelor's degree in software engineering, Project goals was:
 
@@ -153,7 +147,7 @@ We chose **Django** for the backend due to its productivity, built-in features, 
 
 ### Implementing a Fast Search Algorithm with Recommendations
 
-I needed a fast and efficient search algorithm with recommendation features. Starting with the Levenshtein algorithm in Python, I found it too slow. I then moved to a PL/SQL implementation, but it still wasn’t fast enough. Finally, I wrote the algorithm in C and used it as a User-Defined Function (UDF) in the database, achieving a dramatic performance boost. The query time improved from 1.1 seconds (PL/SQL) to 0.0009 seconds (C UDF), making it 1222x times faster. tested on a table with over 2100 indexed records.
+I needed a fast and efficient search algorithm with recommendation features. Starting with the Levenshtein algorithm in Python, I found it too slow. I then moved to a PL/SQL implementation, but it still wasn’t fast enough. Finally, I wrote the algorithm in C and used it as a User-Defined Function (UDF) in the database, achieving a dramatic performance boost. The query time improved from 1.1 seconds (PL/SQL) to 0.009 seconds (C UDF), making it 122x times faster. tested on a table with over 2100 indexed records.
 
 ### Designing an innovative authentication flow
 
@@ -179,14 +173,14 @@ I tackled the challenge of allowing users to manage multiple profiles (guest, ho
 
 The system required numerous complex queries and filters to deliver detailed statistics and results. Initially, I struggled with writing multiple subqueries in Django, as they were hard to manage. That's when I discovered the [django-sql-utils](https://github.com/martsberger/django-sql-utils) package. This package greatly simplified the process, making it easier to write subqueries and handle conditions within them, streamlining the development of complex queries.
 
- ## 6. Project Status
+ ## 5. Project Status
  **Alpha Version**: This project is currently in the alpha version. We are actively working on it and plan to add new features in the future.
 
 
- ## 7. Acknowledgements
+ ## 6. Acknowledgements
 - Thanks to all the open-source libraries used in this project.
 - Special thanks to [brahim bafouloulou](https://github.com/brahimbafou) for collaboration.
 
-## 8. Contact Information
+## 7. Contact Information
 
 For any inquiries, please contact me at [yacerbaba10@gmail.com].

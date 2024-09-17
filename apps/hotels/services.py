@@ -6,7 +6,8 @@ from decouple import config
 from django.contrib.sites.shortcuts import get_current_site
 from django.db import transaction, connection
 from django.db.models import QuerySet
-from django.shortcuts import get_list_or_404, get_object_or_404
+from django.shortcuts import get_object_or_404
+from core.utils import get_list_or_404
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 
@@ -431,20 +432,18 @@ def find_amenities_by_hotel_id(hotel_id):
     return Amenity.objects.find_amenities_by_hotel_id(hotel_id)
 
 
-def get_hotel_info_for_edit(request, hotel_id) -> HotelEditInfoDTO:
+def get_hotel_info_for_edit(hotel_id) -> HotelEditInfoDTO:
     hotel = Hotel.objects.select_related('rules').get(id=hotel_id)
     selected_cancellation_policy = hotel.rules.cancellation_policy
     selected_prepayment_policy = hotel.rules.prepayment_policy
     selected_parking_type = hotel.parking_situation.parking_type
-    current_site = get_current_site(request)
-    domain = f"http://{current_site.domain}"
     return HotelEditInfoDTO(
         hotel.id, hotel.name, hotel.stars, hotel.address, hotel.longitude, hotel.latitude,
-        hotel.website_url, domain + hotel.cover_img.url, hotel.about, hotel.business_email, hotel.contact_number,
+        hotel.website_url, hotel.cover_img.url, hotel.about, hotel.business_email, hotel.contact_number,
         hotel.city.id, hotel.city.country.id, hotel.country_code.id,
         [CountryCodeDTO(country.id, country.name, country.country_code) for country in Country.objects.all()],
         [BaseCityDTO(city.id, city.name) for city in City.objects.all()],
-        [AmenityDTO(facility.id, facility.name, domain + facility.icon.url, facility.checked)
+        [AmenityDTO(facility.id, facility.name, facility.icon.url, facility.checked)
          for facility in Amenity.objects.find_amenities_by_hotel_id(hotel.id)],
         [StaffLanguageDTO(language.id, language.name, language.checked)
          for language in Language.objects.find_languages_by_hotel_id(hotel_id)],
@@ -458,7 +457,7 @@ def get_hotel_info_for_edit(request, hotel_id) -> HotelEditInfoDTO:
         hotel.parking_situation.reservation_needed,
         [ParkingTypeDTO(parking_type, parking_type == selected_parking_type)
          for parking_type in ParkingType],
-        [ImageDTO(image.id, domain + image.img.url) for image in hotel.images.all()]
+        [ImageDTO(image.id, image.img.url) for image in hotel.images.all()]
     )
 
 
@@ -513,19 +512,18 @@ def get_room_info_for_edit(request, room_type_id):
     selected_cancellation_policy = room_type.policies.cancellation_policy
     selected_prepayment_policy = room_type.policies.prepayment_policy
     current_site = get_current_site(request)
-    domain = f"http://{current_site.domain}"
     return RoomEditInfoDTO(
         room_type.name, room_type.rooms_count, room_type.number_of_guests, room_type.price_per_night,
         room_type.size, [_type for _type in RoomTypeEnum],
-        [AmenityDTO(amenity.id, amenity.name, domain + amenity.icon.url, amenity.checked)
+        [AmenityDTO(amenity.id, amenity.name, amenity.icon.url, amenity.checked)
          for amenity in Amenity.objects.find_amenities_by_room_type_id(room_type_id)],
         [RoomCancellationPolicyDTO(policy, policy == selected_cancellation_policy) for policy in
          RoomTypeCancellationPolicy], room_type.policies.days_before_cancellation,
         [RoomPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
          for policy in RoomTypePrepaymentPolicy],
         BedType.objects.find_all_beds_for_room_type(room_type_id),
-        domain + room_type.cover_img.url,
-        [ImageDTO(image.id, domain + image.image.url) for image in room_type.images.all()]
+        room_type.cover_img.url,
+        [ImageDTO(image.id, image.image.url) for image in room_type.images.all()]
     )
 
 
