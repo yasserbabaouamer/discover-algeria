@@ -2,7 +2,7 @@
 
 DiscoverAlgeria: Your Gateway to the Wonders of Algeria
 
-## Project description:
+## Project description
 
 DiscoverAlgeria is a comprehensive tourism platform designed to showcase the beauty and attractions of Algeria. It aims to provide travelers with detailed information about various tourist destinations, cultural experiences, accommodation options, guided tours, and helpful tips to enrich their exploration of Algeria.
 
@@ -55,7 +55,7 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
 **The tourism agency can:**
 
 - **Manage agency information**
-- **View, add, update, and delete tours (to be added soon)**
+- **View, add, update, and delete tours**
 
 **The admin can:**
 
