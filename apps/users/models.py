@@ -10,10 +10,11 @@ from apps.users.enums import *
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, password):
+    def create_user(self, email, password, is_active=False):
         email = self.normalize_email(email)
         user = self.model(email=email)
         user.set_password(password)
+        user.is_active = is_active
         user.save()
         return user
 

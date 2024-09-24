@@ -73,7 +73,7 @@ DiscoverAlgeria is a comprehensive tourism platform designed to showcase the bea
 - Backend: Python, C, Django, DRF
 - Databases: MariaDB
 - Cloud/Infrastructure: Docker, AWS (EC2 for hosting, S3 for storage)
-- Web server: Gunicorn, (Nginx to be added soon)
+- Web server: Nginx, Gunicorn
 - Task scheduling: celery, celery-beats, redis
 - Authentication: JWT
 - API documentation: OpenAPI (drf-spectacular)

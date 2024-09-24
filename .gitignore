@@ -3,5 +3,4 @@
 core/settings/local.py
 core/settings/prod.py
 media
-docker-compose.dev.yml
-docker-compose.prod.yml
+docker-compose.override.yml

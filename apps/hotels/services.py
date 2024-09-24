@@ -1,19 +1,17 @@
 from datetime import datetime as _datetime
-from datetime import time
 
 import stripe
 from decouple import config
-from django.contrib.sites.shortcuts import get_current_site
 from django.db import transaction, connection
 from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
-from core.utils import get_list_or_404
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 
 from apps.hotels.models import Reservation, ReservedRoomType, RoomAssignment, HotelImage, ParkingSituation, \
     RoomTypeImage, BedType
 from core.utils import CustomException
+from core.utils import get_list_or_404
 from .converters import *
 from .enums import HotelStatus, ReservationStatus, RoomTypeStatus, HotelCancellationPolicy, RoomTypeEnum, \
     RoomTypeCancellationPolicy, RoomTypePrepaymentPolicy, RoomStatus
@@ -233,7 +231,7 @@ def delete_room_type(room_type_id: int):
     room_type.save()
 
 
-def update_hotel(request, hotel_id, form_data: dict):
+def update_hotel(hotel_id, form_data: dict):
     hotel_data: dict = form_data.get('body')
     hotel_info = hotel_data.get('hotel_info')
     hotel_rules = hotel_data.get('hotel_rules')
@@ -437,27 +435,51 @@ def get_hotel_info_for_edit(hotel_id) -> HotelEditInfoDTO:
     selected_cancellation_policy = hotel.rules.cancellation_policy
     selected_prepayment_policy = hotel.rules.prepayment_policy
     selected_parking_type = hotel.parking_situation.parking_type
+    country_codes = [CountryCodeDTO(country.id, country.name, country.country_code) for country in
+                     Country.objects.all()]
+    cities = [BaseCityDTO(city.id, city.name) for city in City.objects.all()]
+    facilities = [AmenityDTO(facility.id, facility.name, facility.icon.url, facility.checked)
+                  for facility in Amenity.objects.find_amenities_by_hotel_id(hotel.id)]
+    staff_languages = [StaffLanguageDTO(language.id, language.name, language.checked)
+                       for language in Language.objects.find_languages_by_hotel_id(hotel_id)]
+    hotel_cancellation_policies = [HotelCancellationPolicyDTO(policy, policy == selected_cancellation_policy)
+                                   for policy in HotelCancellationPolicy]
+    prepayment_policies = [HotelPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
+                           for policy in HotelPrepaymentPolicy]
+    parking_types = [ParkingTypeDTO(parking_type, parking_type == selected_parking_type)
+                     for parking_type in ParkingType]
+    images = [ImageDTO(image.id, image.img.url) for image in hotel.images.all()]
+
     return HotelEditInfoDTO(
-        hotel.id, hotel.name, hotel.stars, hotel.address, hotel.longitude, hotel.latitude,
-        hotel.website_url, hotel.cover_img.url, hotel.about, hotel.business_email, hotel.contact_number,
-        hotel.city.id, hotel.city.country.id, hotel.country_code.id,
-        [CountryCodeDTO(country.id, country.name, country.country_code) for country in Country.objects.all()],
-        [BaseCityDTO(city.id, city.name) for city in City.objects.all()],
-        [AmenityDTO(facility.id, facility.name, facility.icon.url, facility.checked)
-         for facility in Amenity.objects.find_amenities_by_hotel_id(hotel.id)],
-        [StaffLanguageDTO(language.id, language.name, language.checked)
-         for language in Language.objects.find_languages_by_hotel_id(hotel_id)],
-        hotel.rules.check_in_from, hotel.rules.check_in_until,
-        hotel.rules.check_out_from, hotel.rules.check_out_until,
-        [HotelCancellationPolicyDTO(policy, policy == selected_cancellation_policy) for policy in
-         HotelCancellationPolicy], hotel.rules.days_before_cancellation,
-        [HotelPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
-         for policy in HotelPrepaymentPolicy],
-        hotel.parking_available,
-        hotel.parking_situation.reservation_needed,
-        [ParkingTypeDTO(parking_type, parking_type == selected_parking_type)
-         for parking_type in ParkingType],
-        [ImageDTO(image.id, image.img.url) for image in hotel.images.all()]
+        id=hotel.id,
+        name=hotel.name,
+        stars=hotel.stars,
+        address=hotel.address,
+        longitude=hotel.longitude,
+        latitude=hotel.latitude,
+        website_url=hotel.website_url,
+        cover_img=hotel.cover_img.url,
+        about=hotel.about,
+        business_email=hotel.business_email,
+        contact_number=hotel.contact_number,
+        current_city_id=hotel.city.id,
+        current_country_id=hotel.city.country.id,
+        current_country_code_id=hotel.country_code.id,
+        country_codes=country_codes,
+        cities=cities,
+        facilities=facilities,
+        staff_languages=staff_languages,
+        check_in_from=hotel.rules.check_in_from,
+        check_in_until=hotel.rules.check_in_until,
+        check_out_from=hotel.rules.check_out_from,
+        check_out_until=hotel.rules.check_out_until,
+        cancellation_policies=hotel_cancellation_policies,
+        days_before_cancellation=hotel.rules.days_before_cancellation,
+        prepayment_policies=prepayment_policies,
+        parking_available=hotel.parking_available,
+        reservation_needed=hotel.parking_situation.reservation_needed,
+        parking_types=parking_types,
+        images=images
     )
 
 
@@ -466,30 +488,39 @@ def find_owner_dashboard_information(owner_id):
     hotels = Hotel.objects.find_owner_hotels(owner_id)[:10]
     latest_reservations = Reservation.objects.find_latest_reservations_to_owner_hotel(owner_id)
     latest_reviews = GuestReview.objects.find_latest_reviews_relate_to_owner(owner_id)
+    hotels = [EssentialHotelDTO(hotel.id, hotel.name, hotel.check_ins_count, hotel.reservations_count)
+              for hotel in hotels]
+    reservations = [ReservationDTO(reservation.id,
+                                   f"{reservation.guest.first_name} {reservation.guest.last_name}",
+                                   reservation.guest.profile_pic.url,
+                                   reservation.status,
+                                   reservation.total_price)
+                    for reservation in latest_reservations]
     return OwnerDashboardDTO(
-        [EssentialHotelDTO(hotel.id, hotel.name, hotel.check_ins_count, hotel.reservations_count)
-         for hotel in hotels],
-        review_converter.to_dtos_list(latest_reviews),
-        [ReservationDTO(reservation.id, f"{reservation.guest.first_name} {reservation.guest.last_name}",
-                        reservation.guest.profile_pic.url, reservation.status, reservation.total_price)
-         for reservation in latest_reservations],
-        []
+        hotels=hotels,
+        reviews=review_converter.to_dtos_list(latest_reviews),
+        reservations=reservations,
+        daily_incomes=[]
     )
 
 
 def get_essential_info_for_hotel_creation():
-    countries = Country.objects.all()
-    cities = City.objects.all()
-    languages = Language.objects.all()
-    facilities = Amenity.objects.filter(category__name='Facilities').all()
+    countries = [CountryDTO(country.id, country.name, False) for country in Country.objects.all()]
+    cities = [CityDTO(city.id, city.name, False, city.country.id) for city in City.objects.all()]
+    languages = [StaffLanguageDTO(language.id, language.name, False) for language in Language.objects.all()]
+    facilities = [AmenityDTO(facility.id, facility.name, facility.icon.url, False)
+                  for facility in Amenity.objects.filter(category__name='Facilities').all()]
+    cancellation_policies = [HotelCancellationPolicyDTO(policy, False) for policy in HotelCancellationPolicy]
+    prepayment_policies = [HotelPrepaymentPolicyDTO(policy, False) for policy in HotelPrepaymentPolicy]
+    parking_types = [ParkingTypeDTO(_type, False) for _type in ParkingType]
     obj = HotelCreateInfoDTO(
-        [CountryDTO(country.id, country.name, False) for country in countries],
-        [CityDTO(city.id, city.name, False, city.country.id) for city in cities],
-        [StaffLanguageDTO(language.id, language.name, False) for language in languages],
-        [AmenityDTO(facility.id, facility.name, facility.icon.url, False) for facility in facilities],
-        [HotelCancellationPolicyDTO(policy, False) for policy in HotelCancellationPolicy],
-        [HotelPrepaymentPolicyDTO(policy, False) for policy in HotelPrepaymentPolicy],
-        [ParkingTypeDTO(type, False) for type in ParkingType]
+        countries=countries,
+        cities=cities,
+        languages=languages,
+        facilities=facilities,
+        cancellation_policies=cancellation_policies,
+        prepayment_policies=prepayment_policies,
+        parking_types=parking_types
     )
     obj.cancellation_policies[0].checked = True
     obj.prepayment_policies[0].checked = True
@@ -499,31 +530,40 @@ def get_essential_info_for_hotel_creation():
 
 def get_essential_info_for_room_creation():
     return CreateRoomInfoDTO(
-        [room for room in RoomTypeEnum],
-        [AmenityDTO(amenity.id, amenity.name, amenity.icon.url, False) for amenity in
-         Amenity.objects.find_all_rooms_amenities()],
-        [RoomCancellationPolicyDTO(policy, False) for policy in RoomTypeCancellationPolicy],
-        [RoomPrepaymentPolicyDTO(policy, False) for policy in RoomTypePrepaymentPolicy],
+        room_types=[room for room in RoomTypeEnum],
+        amenities=[AmenityDTO(amenity.id, amenity.name, amenity.icon.url, False)
+                   for amenity in Amenity.objects.find_all_rooms_amenities()],
+        cancellation_policies=[RoomCancellationPolicyDTO(policy, False) for policy in RoomTypeCancellationPolicy],
+        prepayment_policies=[RoomPrepaymentPolicyDTO(policy, False) for policy in RoomTypePrepaymentPolicy],
     )
 
 
-def get_room_info_for_edit(request, room_type_id):
+def get_room_info_for_edit(room_type_id):
     room_type = RoomType.objects.find_by_id(room_type_id)
     selected_cancellation_policy = room_type.policies.cancellation_policy
     selected_prepayment_policy = room_type.policies.prepayment_policy
-    current_site = get_current_site(request)
+    amenities = [AmenityDTO(amenity.id, amenity.name, amenity.icon.url, amenity.checked)
+                 for amenity in Amenity.objects.find_amenities_by_room_type_id(room_type_id)]
+    cancellation_policies = [RoomCancellationPolicyDTO(policy, policy == selected_cancellation_policy)
+                             for policy in RoomTypeCancellationPolicy]
+    prepayment_policies = [RoomPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
+                           for policy in RoomTypePrepaymentPolicy]
+    beds = BedType.objects.find_all_beds_for_room_type(room_type_id)
+    images = [ImageDTO(image.id, image.image.url) for image in room_type.images.all()]
     return RoomEditInfoDTO(
-        room_type.name, room_type.rooms_count, room_type.number_of_guests, room_type.price_per_night,
-        room_type.size, [_type for _type in RoomTypeEnum],
-        [AmenityDTO(amenity.id, amenity.name, amenity.icon.url, amenity.checked)
-         for amenity in Amenity.objects.find_amenities_by_room_type_id(room_type_id)],
-        [RoomCancellationPolicyDTO(policy, policy == selected_cancellation_policy) for policy in
-         RoomTypeCancellationPolicy], room_type.policies.days_before_cancellation,
-        [RoomPrepaymentPolicyDTO(policy, policy == selected_prepayment_policy)
-         for policy in RoomTypePrepaymentPolicy],
-        BedType.objects.find_all_beds_for_room_type(room_type_id),
-        room_type.cover_img.url,
-        [ImageDTO(image.id, image.image.url) for image in room_type.images.all()]
+        selected_room_type=room_type.name,
+        number_of_rooms=room_type.rooms_count,
+        number_of_guests=room_type.number_of_guests,
+        price_per_night=room_type.price_per_night,
+        size=room_type.size,
+        room_types=[_type for _type in RoomTypeEnum],
+        amenities=amenities,
+        cancellation_policies=cancellation_policies,
+        days_before_cancellation=room_type.policies.days_before_cancellation,
+        prepayment_policies=prepayment_policies,
+        beds=beds,
+        cover_img=room_type.cover_img.url,
+        images=images
     )
 
 

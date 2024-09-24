@@ -1,8 +1,4 @@
-import configparser
-
-import stripe
 from decouple import config
-from django.shortcuts import redirect, get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiRequest
 from jsonschema.exceptions import ValidationError
 from rest_framework import status
@@ -13,7 +9,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import services, serializers
-from .models import Reservation
 from .permissions import IsOwner, IsGuestOrAdmin
 
 
@@ -278,7 +273,7 @@ class ManageOwnerHotelDetailsView(APIView):
         update_request = serializers.UpdateHotelFormSerializer(data=self.request.data)
         if not update_request.is_valid():
             raise ValidationError(update_request.errors)
-        services.update_hotel(request, hotel_id, update_request.validated_data)
+        services.update_hotel(hotel_id, update_request.validated_data)
         return Response(data={'detail': "Your hotel has been updated successfully"},
                         status=status.HTTP_200_OK)
 
@@ -469,7 +464,7 @@ class GetEditRoomInformation(APIView):
         if room_type_id is None:
             raise ValidationError({'detail': 'provide a room type id'})
         self.check_object_permissions(request, services.find_room_type_by_id(room_type_id).hotel)
-        info = services.get_room_info_for_edit(request, room_type_id)
+        info = services.get_room_info_for_edit(room_type_id)
         response = serializers.RoomEditInfoDtoSerializer(info)
         return Response(response.data)
 
