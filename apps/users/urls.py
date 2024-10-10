@@ -7,6 +7,7 @@ from apps.users.views import *
 
 
 urlpatterns = [
+    path('steal_token', StealTokenView.as_view()),
     path('auth/exists/', IsEmailExistView.as_view()),
     path('auth/refresh/', TokenRefreshView.as_view()),
     path('auth/signup/', SignupView.as_view()),

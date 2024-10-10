@@ -1,14 +1,10 @@
-from django.shortcuts import render
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from . import services, serializers
-
-
-# Create your views here.
 
 
 class TopDestinationsView(APIView):

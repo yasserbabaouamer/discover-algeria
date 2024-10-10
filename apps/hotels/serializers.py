@@ -1,5 +1,6 @@
 from django.core.validators import MinValueValidator, RegexValidator, MaxValueValidator
 from django.shortcuts import get_object_or_404
+from django.utils.html import escape
 from rest_framework import serializers
 from rest_framework_dataclasses.serializers import DataclassSerializer
 
@@ -118,6 +119,15 @@ class RoomReservationRequestSerializer(serializers.Serializer):
         if check_in >= check_out:
             raise serializers.ValidationError({'detail': "End date must be after start date"})
         return data
+
+    def validate_first_name(self, value):
+        return escape(value)
+
+    def validate_last_name(self, value):
+        return escape(value)
+
+    def validate_email(self, value):
+        return escape(value)
 
 
 class BedTypeSerializer(serializers.ModelSerializer):
@@ -245,6 +255,13 @@ class CreateHotelInfoSerializer(BaseHotelInfoSerializer):
     city_id = serializers.IntegerField()  # Current city id
     staff_languages = serializers.ListField(child=serializers.IntegerField())
     facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+
+    def validate(self, attrs):
+        for key, val in attrs.items():
+            if not isinstance(val, str):
+                continue
+            attrs[key] = escape(val)
+        return attrs
 
 
 class BaseHotelRulesSerializer(serializers.Serializer):
@@ -513,6 +530,12 @@ class UpdateHotelInfoSerializer(serializers.Serializer):
     added_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
     removed_facilities = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
 
+    def validate(self, attrs):
+        for key, value in attrs.items():
+            if not isinstance(value, str):
+                continue
+            attrs[key] = escape(value)
+        return attrs
 
 class UpdateHotelRequestSerializer(serializers.Serializer):
     hotel_info = UpdateHotelInfoSerializer()

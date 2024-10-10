@@ -1,5 +1,5 @@
 # Base image
-FROM python:3.11
+FROM python:3.11-slim-buster
 
 # Update the os environment variable to not delay logs
 ENV PYTHONBUFFERED = 1
@@ -9,7 +9,10 @@ WORKDIR /discoveralgeria
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     pkg-config \
-    libmariadb-dev
+    libmariadb-dev \
+    libmariadb-dev-compat \
+    default-libmysqlclient-dev \
+    build-essential
 
 COPY requirements.txt requirements.txt
 

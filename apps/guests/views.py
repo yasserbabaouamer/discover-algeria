@@ -34,15 +34,15 @@ class LoginGuestView(APIView):
     )
     def post(self, request: Request):
         login_request = serializers.GuestLoginRequestSerializer(data=self.request.data)
-        if login_request.is_valid():
-            result = services.authenticate_guest(login_request.validated_data)
-            if isinstance(result, GuestTokens):
-                tokens_serializer = serializers.GuestTokensSerializer(result)
-                return Response(data=tokens_serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response(data={'detail': 'Confirmation code sent successfully'}, status=status.HTTP_201_CREATED)
+        if not login_request.is_valid():
+            raise ValidationError(login_request.errors)
+        result = services.authenticate_guest(login_request.validated_data)
+        if isinstance(result, GuestTokens):
+            tokens_serializer = serializers.GuestTokensSerializer(result)
+            return Response(data=tokens_serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(data={'detail': 'Confirmation code sent successfully'}, status=status.HTTP_201_CREATED)
 
-        raise ValidationError(login_request.errors)
 
 
 class SetupGuestProfileForExistingUser(APIView):

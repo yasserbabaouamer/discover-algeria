@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.shortcuts import get_object_or_404
 
@@ -10,13 +10,18 @@ def get_top_tours():
 
 
 def find_available_tours(city_id: int, filter_request: dict):
-    current_day: date = filter_request['check_in']
+    current_date: date = filter_request['check_in']
     days = {}
-    while current_day <= filter_request['check_out']:
-        weekday = current_day.today().strftime('%A')
+    while current_date <= filter_request['check_out']:
+        # The user passes the starting and ending dates
+        # I get the day names of this period
+        # Find the available tours which happen on those days
+        weekday = current_date.today().strftime('%A')
         if weekday not in days:
-            days[weekday] = [current_day]
-        days[weekday].append(current_day)
+            days[weekday] = [current_date]
+        else:
+            days[weekday].append(current_date)
+        current_date += timedelta(days=1)
     print('Requested Days :', days)
     return PeriodicTour.objects.find_available_tours_by_city_id(city_id, days)
 

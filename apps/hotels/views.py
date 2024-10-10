@@ -100,13 +100,13 @@ class CreateReservationView(APIView):
     )
     def post(self, request):
         reservation_request = serializers.RoomReservationRequestSerializer(data=request.data)
-        if reservation_request.is_valid():
-            reservation_id = services.reserve_hotel_room(self.request.user, reservation_request.validated_data)
-            return Response({
-                'detail': "Your reservation has been created successfully, Complete the payment",
-                'reservation_id': reservation_id
-            }, status.HTTP_201_CREATED)
-        raise ValidationError(detail=reservation_request.errors)
+        if not reservation_request.is_valid():
+            raise ValidationError(detail=reservation_request.errors)
+        reservation_id = services.reserve_hotel_room(self.request.user, reservation_request.validated_data)
+        return Response({
+            'detail': "Your reservation has been created successfully, Complete the payment",
+            'reservation_id': reservation_id
+        }, status.HTTP_201_CREATED)
 
 
 class FindHotelsByCity(APIView):
@@ -126,12 +126,12 @@ class FindHotelsByCity(APIView):
         if city_id is None:
             raise ValidationError({'detail': 'City id is required'})
         request = serializers.FilterRequestSerializer(data=self.request.query_params.dict())
-        if request.is_valid():
-            print('Validated Data :', request.validated_data)
-            search_results = services.filter_city_hotels(city_id, request.validated_data)
-            response = serializers.HotelDetailsSerializer(search_results, many=True)
-            return Response(data=response.data, status=status.HTTP_200_OK)
-        raise ValidationError(request.errors)
+        if not request.is_valid():
+            raise ValidationError(request.errors)
+        print('Validated Data :', request.validated_data)
+        search_results = services.filter_city_hotels(city_id, request.validated_data)
+        response = serializers.HotelDetailsSerializer(search_results, many=True)
+        return Response(data=response.data, status=status.HTTP_200_OK)
 
 
 class GetAllAmenities(APIView):
@@ -253,7 +253,6 @@ class ManageOwnerHotelDetailsView(APIView):
         response = serializers.HotelDashboardInfoSerializer(hotel_info)
         return Response(data=response.data, status=status.HTTP_200_OK)
 
-    # TODO: Test this method later - it's working
     @extend_schema(
         summary='Update Hotel - Owner',
         tags=['Owner Dashboard'],

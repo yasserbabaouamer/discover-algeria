@@ -1,12 +1,10 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
-from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser, JSONParser
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.utils import CustomException
 from . import serializers, services
 from .dtos import OwnerTokens
 from .permissions import *
@@ -55,11 +53,11 @@ class SetupOwnerProfileView(APIView):
     )
     def post(self, _request, *args, **kwargs):
         request_body = serializers.SetupOwnerProfileFormSerializer(data=self.request.data)
-        if request_body.is_valid():
-            services.setup_owner_profile(self.request.user, request_body.validated_data)
-            return Response({'details': "Your account has been created successfully"}
-                            , status=status.HTTP_201_CREATED)
-        raise ValidationError(detail=request_body.errors)
+        if not request_body.is_valid():
+            raise ValidationError(detail=request_body.errors)
+        services.setup_owner_profile(self.request.user, request_body.validated_data)
+        return Response({'details': "Your account has been created successfully"}
+                        , status=status.HTTP_201_CREATED)
 
 
 class GetOwnerEssentials(APIView):

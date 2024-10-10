@@ -4,6 +4,7 @@ from django.core.validators import RegexValidator
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_dataclasses.serializers import DataclassSerializer
+from django.utils.html import escape
 
 from .dtos import *
 from .models import Owner
@@ -13,6 +14,11 @@ from ..destinations.serializers import CountrySerializer
 class OwnerLoginRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(max_length=255)
+
+    def validate(self, attrs):
+        for key, value in attrs.items():
+            attrs[key] = escape(value)
+        return attrs
 
 
 class OwnerTokensSerializer(DataclassSerializer):
@@ -29,10 +35,16 @@ class SetupOwnerProfileFormSerializer(serializers.Serializer):
     country_id = serializers.IntegerField()
     profile_pic = serializers.ImageField(required=False)
 
-    def validate(self, data):
-        if datetime.date.today() < data['birthday']:
-            raise serializers.ValidationError({'detail': f"{data['birthday']} are you kidding me ?"})
-        return data
+    def validate_birthday(self, value):
+        if datetime.date.today() < value:
+            raise serializers.ValidationError({'detail': f"{value} are you kidding me ?"})
+        return value
+
+    def validate_first_name(self, value):
+        return escape(value)
+
+    def validate_last_name(self, value):
+        return escape(value)
 
 
 class OwnerEssentialInfoSerializer(serializers.ModelSerializer):
@@ -94,10 +106,23 @@ class BaseOwnerSerializer(serializers.Serializer):
     phone = serializers.IntegerField(required=False, allow_null=True, validators=[RegexValidator(regex="^\d{7,15}$")])
     country_id = serializers.IntegerField(required=False)
 
+    def validate(self, attrs):
+        for key, val in attrs.items():
+            if not isinstance(val, str):
+                continue
+            attrs[key] = escape(val)
+        return attrs
+
 
 class CreateOwnerRequestSerializer(BaseOwnerSerializer):
     email = serializers.EmailField()
     password = serializers.CharField(max_length=255)
+
+    def validate_email(self, value):
+        return escape(value)
+
+    def validate_password(self, value):
+        return escape(value)
 
 
 class UpdateOwnerFormSerializer(serializers.Serializer):

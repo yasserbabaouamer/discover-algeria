@@ -1,12 +1,9 @@
 from concurrent.futures import ProcessPoolExecutor
-from datetime import date, datetime, time
-from functools import partial
-from multiprocessing.pool import Pool
+from datetime import datetime, time
 from typing import List
 
 from apps.hotels.models import Hotel
 from apps.search.dtos import SearchItem
-
 from .converters import SearchItemConverter
 from ..destinations.models import City
 from ..touristicagencies.models import PeriodicTour, TouristicAgency
@@ -18,7 +15,6 @@ converter = SearchItemConverter()
 
 def do_quick_search_hotels(keyword) -> List[SearchItem]:
     hotels = Hotel.objects.find_by_keyword(keyword)
-    print(f"Hotels having keyword {keyword} are : {hotels}")
     return converter.convert_hotels_to_dtos_list(hotels)
 
 
@@ -28,7 +24,6 @@ def do_quick_search_agencies(keyword) -> List[SearchItem]:
 
 
 def do_quick_search_tours(keyword) -> List[SearchItem]:
-    print("Going to fetch tours")
     tours = PeriodicTour.objects.find_by_keyword(keyword)
     print(tours)
     return converter.convert_tours_to_dtos_list(tours)

@@ -490,11 +490,11 @@ def find_owner_dashboard_information(owner_id):
     latest_reviews = GuestReview.objects.find_latest_reviews_relate_to_owner(owner_id)
     hotels = [EssentialHotelDTO(hotel.id, hotel.name, hotel.check_ins_count, hotel.reservations_count)
               for hotel in hotels]
-    reservations = [ReservationDTO(reservation.id,
-                                   f"{reservation.guest.first_name} {reservation.guest.last_name}",
-                                   reservation.guest.profile_pic.url,
-                                   reservation.status,
-                                   reservation.total_price)
+    reservations = [ReservationDTO(id=reservation.id,
+                                   username=f"{reservation.guest.first_name} {reservation.guest.last_name}",
+                                   profile_pic=reservation.guest.profile_pic.url,
+                                   status=reservation.status,
+                                   total_price=reservation.total_price)
                     for reservation in latest_reservations]
     return OwnerDashboardDTO(
         hotels=hotels,

@@ -1,4 +1,5 @@
 from django.core.validators import RegexValidator
+from django.utils.html import escape
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -19,6 +20,12 @@ class QuickProfileRequestSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=255)
     last_name = serializers.CharField(max_length=255)
     profile_pic = serializers.ImageField(required=False)
+
+    def validate_first_name(self, value):
+        return escape(value)
+
+    def validate_last_name(self, value):
+        return escape(value)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -105,10 +112,25 @@ class BaseGuestInfoSerializer(serializers.Serializer):
     phone = serializers.IntegerField(required=False, allow_null=True, validators=[RegexValidator(regex="^\d{7,15}$")])
     country_id = serializers.IntegerField(required=False)
 
+    def validate_first_name(self, value):
+        return escape(value)
+
+    def validate_last_name(self, value):
+        return escape(value)
+
+    def validate_address(self, value):
+        return escape(value)
+
 
 class CreateGuestRequestSerializer(BaseGuestInfoSerializer):
     email = serializers.EmailField()
     password = serializers.CharField(max_length=255)
+
+    def validate_email(self, value):
+        return escape(value)
+
+    def validate_password(self, value):
+        return escape(value)
 
 
 class UpdateGuestFormSerializer(serializers.Serializer):

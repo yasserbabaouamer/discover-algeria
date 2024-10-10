@@ -1,4 +1,5 @@
 from django.contrib.auth.password_validation import MinimumLengthValidator
+from django.utils.html import escape
 from rest_framework import serializers as rest_serializers
 from rest_framework.exceptions import ValidationError
 
@@ -13,6 +14,8 @@ class SignupRequestSerializer(rest_serializers.Serializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise ValidationError(detail={'detail': 'passwords are not identical'})
+        for key, val in attrs.items():
+            attrs[key] = escape(val)
         return attrs
 
 
@@ -30,8 +33,11 @@ class TokensSerializer(rest_serializers.Serializer):
 class EmailSerializer(rest_serializers.Serializer):
     email = rest_serializers.EmailField()
 
+    def validate_email(self, value):
+        return escape(value)
 
-class ConfirmationCodeRequestSerializer(rest_serializers.Serializer):
+
+class ConfirmationCodeRequestSerializer(EmailSerializer):
     email = rest_serializers.EmailField()
     confirmation_code = rest_serializers.IntegerField()
 
@@ -40,10 +46,20 @@ class CompletePasswordResetRequestSerializer(rest_serializers.Serializer):
     token = rest_serializers.UUIDField()
     new_password = rest_serializers.CharField(max_length=255)
 
+    def validate(self, attrs):
+        for key, val in attrs.items():
+            attrs[key] = escape(val)
+        return attrs
+
 
 class LoginAdminRequestSerializer(rest_serializers.Serializer):
     email = rest_serializers.CharField(max_length=255)
     password = rest_serializers.CharField(max_length=255)
+
+    def validate(self, attrs):
+        for key, val in attrs.items():
+            attrs[key] = escape(val)
+        return attrs
 
 
 class AdminProfileSerializer(rest_serializers.Serializer):
